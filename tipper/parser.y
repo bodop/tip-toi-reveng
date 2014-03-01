@@ -448,6 +448,9 @@ int tipparse(const char* fn) {
 %token WELCOME
 %token AND ADD OPERATOR_EQ OPERATOR_GE OPERATOR_NEQ
 %token NUM
+%token BONUSGAME GAME IGNORED1 IGNORED2 ROUNDS TYPE PRE_LAST_ROUND_COUNT
+%token NEXT_LEVEL NEXT_ROUND LAST_ROUND SCORE SUBGAME PLAY INVALID OK FALSE
+%token OIDS REPEAT_OID U1 U2 U6 U7 UNKNOWN
 %token <name> IDENTIFIER STRING
 %type <arr> condition action command value
 %type <u16> operator media
@@ -462,7 +465,7 @@ int tipparse(const char* fn) {
 %%
 
 start: product xor format publication language registers welcome
-       scripttable;
+       games scripttable;
 
 product : PRODUCT NUM ';' {
  gme.u.header.product_id=$2;
@@ -553,10 +556,126 @@ oneregister: IDENTIFIER {
   };
              
 
+/* TODO */
 welcome: /* empty */ | WELCOME playlistlist {
   gme.u.header.welcome_off=sbuffer_append($2,$2->len*4+2);
   free($2);
  };
+
+/* TODO */
+next_level: /* empty */ | NEXT_LEVEL playlistlist {
+  free($2);
+ }
+
+/* TODO */
+next_round: /* empty */ | NEXT_ROUND playlistlist {
+  free($2);
+ }
+
+/* TODO */
+last_round: /* empty */ | LAST_ROUND playlistlist {
+  free($2);
+ }
+
+/* TODO */
+ignored1: /* empty */ | IGNORED1 playlistlist {
+  free($2);
+ }
+
+/* TODO */
+ignored2: /* empty */ | IGNORED2 playlistlist {
+  free($2);
+ }
+
+/* TODO */
+play: /* empty */ | PLAY playlistlist {
+  free($2);
+ }
+
+/* TODO */
+invalid: /* empty */ | INVALID playlistlist {
+  free($2);
+ }
+
+/* TODO */
+games: /* empty */ | games game | game;
+
+/* TODO */
+game: GAME newgameid '{' type rounds u1 pre_last_round_count repeat_oid u2
+    welcome next_level next_round last_round ignored1 ignored2
+    subgames bonusgames scores
+'}';
+
+scores: /* empty */ | scores score | score;
+
+/* TODO */
+score: SCORE NUM playlistlist {
+  free($3);
+ }
+
+
+/* TODO */
+subgames: /* empty */ | subgames subgame | subgame;
+
+/* TODO */
+subgame: SUBGAME '{' sgu1 play invalid sgok sgfalse sgu6 sgu7 '}';
+
+/* TODO */
+bonusgames: /* empty */ | bonusgames bonusgame | bonusgame;
+
+/* TODO */
+bonusgame: BONUSGAME '{' sgu1 play invalid sgok sgunknown sgfalse sgu6 sgu7 '}';
+
+/* TODO */
+sgu1: U1 '{' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM '}';
+
+/* TODO */
+sgok: /* empty */ | OK oidplaylist;
+/* TODO */
+sgunknown: /* empty */ | UNKNOWN oidplaylist;
+/* TODO */
+sgfalse: FALSE oidplaylist;
+
+/* TODO */
+sgu6: /* empty */ | U6 playlistlist {
+  free($2);
+ }
+
+/* TODO */
+sgu7: /* empty */ | U7 playlistlist {
+  free($2);
+ }
+
+/* TODO */
+oidplaylist: '{' oids play '}';
+
+/* TODO */
+oids: /* empty */ | OIDS '{' oidlist '}';
+
+/* TODO */
+oidlist: /* empty */ | oidlist ',' oidlistmember | oidlistmember;
+
+oidlistmember: NUM | NUM '-' NUM;
+
+/* TODO */
+type: TYPE NUM
+
+/* TODO */
+rounds: ROUNDS NUM
+
+/* TODO */
+newgameid: NUM | STRING;
+
+pre_last_round_count: PRE_LAST_ROUND_COUNT NUM;
+
+/* TODO */
+repeat_oid: REPEAT_OID NUM;
+
+/* TODO */
+u1: /* EMPTY */ | U1 '{' NUM ',' NUM ',' NUM ',' NUM '}';
+
+/* TODO */
+u2: U2 '{' NUM ',' NUM ',' NUM '}';
 
 playlistlist: '{' playlists '}' {
   $$=$2;

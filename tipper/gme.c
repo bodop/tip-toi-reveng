@@ -5,11 +5,24 @@
 #include <stdio.h>
 #include <assert.h>
 #include <endian.h>
+#include <string.h>
 
 void* gme_get_ptr(struct gme* gme,uint32_t off) {
   off=le32toh(off);
   assert(off+sizeof(uint32_t)<=gme->size);
   return gme->u.raw+off;
+}
+
+static inline uint16_t get_uint16(const unsigned char* p) {
+  uint16_t i;
+  memcpy(&i,p,2);
+  return le16toh(i);
+}
+
+static inline uint32_t get_uint32(const unsigned char* p) {
+  uint32_t i;
+  memcpy(&i,p,4);
+  return le32toh(i);
 }
 
 unsigned char magic_xor(unsigned char x,const unsigned char* p) {
@@ -67,6 +80,9 @@ struct gme* gme_load(const char* path) {
     }
   }
   
+  /* check games */
+  gme_get_games(gme);
+
   /* Check checksum */
   {
     uint32_t sum=0;
@@ -92,6 +108,10 @@ struct gme_script_table* gme_get_scripts(struct gme* gme) {
 
 struct gme_media_table* gme_get_media(struct gme* gme) {
   return gme_get_ptr(gme,gme->u.header.media_off);
+}
+
+struct gme_games_table* gme_get_games(struct gme* gme) {
+  return gme_get_ptr(gme,gme->u.header.games_off);
 }
 
 struct gme_registers* gme_get_registers(struct gme* gme) {
@@ -135,7 +155,8 @@ uint16_t gme_playlist_get(struct gme_playlist* pl,uint16_t i) {
 }
 
 struct gme_playlist*
-gme_playlistlist_get(struct gme* gme,struct gme_playlistlist* pll,uint16_t i) {
+gme_playlistlist_get(struct gme* gme,const struct gme_playlistlist* pll,
+                     uint16_t i) {
   assert(i<=pll->len);
   return gme_get_ptr(gme,pll->entries[i]);
 }
@@ -303,4 +324,84 @@ int gme_media_table_play(struct gme* gme,struct gme_media_table* mt,uint16_t i)
  error1:
   fclose(f);
   return 1;
+}
+
+struct gme_game*
+gme_games_get(struct gme_games_table* gt,struct gme* gme,uint16_t i) {
+  assert(i<gt->len);
+  return gme_get_ptr(gme,gt->game_offs[i]);
+}
+
+const unsigned char* gme_game_get_last_round_p(const struct gme_game* g) {
+  const unsigned char* p=g->raw;
+  if (le16toh(g->type)==6) return p+8;
+  return p;
+}
+
+uint16_t gme_game_get_pre_last_round_count(const struct gme_game* g) {
+  return get_uint16(gme_game_get_last_round_p(g));
+}
+
+uint16_t gme_game_get_repeat_oid(const struct gme_game* g) {
+  return get_uint16(gme_game_get_last_round_p(g)+2);
+}
+
+uint16_t gme_game_get_u2(const struct gme_game* g,uint16_t i) {
+  assert(i<3);
+  return get_uint16(gme_game_get_last_round_p(g)+4+i*2);
+}
+
+struct gme_playlistlist* gme_game_get_playlistlist(const struct gme_game* g,struct gme* gme,uint16_t i) {
+  assert(i<((g->type==6) ? 7 : 5));
+  return (struct gme_playlistlist*)
+    gme_get_ptr(gme,get_uint32(gme_game_get_last_round_p(g)+10+i*4));
+}
+
+struct gme_subgame*
+gme_game_get_subgame(const struct gme_game* g,struct gme* gme,uint16_t i)
+{
+  assert(i<le16toh(g->subgames_len));
+  const unsigned char* p=gme_game_get_last_round_p(g)+30+i*4;
+  if (g->type==6) p+=8;
+  return (struct gme_subgame*) gme_get_ptr(gme,get_uint32(p));
+}
+
+struct gme_subgame*
+gme_game_get_bonusgame(const struct gme_game* g,struct gme* gme,uint16_t i)
+{
+  assert(i<le16toh(g->c));
+  const unsigned char* p=gme_game_get_last_round_p(g)+30+
+    (le16toh(g->subgames_len)+i)*4;
+  if (g->type==6) p+=8;
+  return (struct gme_subgame*) gme_get_ptr(gme,get_uint32(p));
+}
+
+const struct gme_scorelist*
+gme_game_get_scorelist(const struct gme_game* g,struct gme* gme) {
+  const unsigned char* p=gme_game_get_last_round_p(g)+30+
+    (le16toh(g->subgames_len)+le16toh(g->c))*4;
+  if (le16toh(g->type)==6) p+=8;
+  return (struct gme_scorelist*) p;
+}
+
+const struct gme_oidlist*
+gme_subgame_get_oids(const struct gme_subgame* sb,uint16_t i)
+{
+  assert(i<3);
+  const unsigned char* p=sb->raw+20;
+  while (i--) p+=get_uint16(p)*2+2;
+  return (const struct gme_oidlist*) p;
+}
+
+const struct gme_playlistlist*
+gme_subgame_get_playlistlist(const struct gme_subgame* sb,
+                             struct gme* gme,uint16_t i)
+{
+  assert(i<9);
+  const unsigned char* p=sb->raw+20;
+  /* Skip oidlists */
+  p+=get_uint16(p)*2+2;
+  p+=get_uint16(p)*2+2;
+  p+=get_uint16(p)*2+2;
+  return (const struct gme_playlistlist*) gme_get_ptr(gme,get_uint32(p+i*4));
 }

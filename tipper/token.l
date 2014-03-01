@@ -22,36 +22,37 @@ NUM [0-9]+
 HEX "0x"[0-9a-fA-F]+
 %%
 
-"format" {
-  return FORMAT;
-}
-
-"product" {
-  return PRODUCT;
-}
-
-"publication" {
-  return PUBLICATION;
-}
-
-"raw_xor" {
-  return RAW_XOR;
-}
-
-"magic_xor" {
-  return MAGIC_XOR;
-}
-
-"register" {
-  return REGISTER;
-}
-
-"language" {
-  return LANGUAGE;
-}
-
+"bonusgame" { return BONUSGAME; }
+"false" { return FALSE; }
+"format" { return FORMAT; }
+"game" { return GAME; }
+"ignored1" { return IGNORED1; }
+"ignored2" { return IGNORED2; }
+"invalid" { return INVALID; }
+"last_round" { return LAST_ROUND; }
+"next_level" { return NEXT_LEVEL; }
+"next_round" { return NEXT_ROUND; }
+"product" { return PRODUCT; } 
+"publication" { return PUBLICATION; } 
+"raw_xor" { return RAW_XOR; } 
+"magic_xor" { return MAGIC_XOR; } 
+"oids" { return OIDS; }
+"ok" { return OK; }
+"play" { return PLAY; }
+"pre_last_round_count" { return PRE_LAST_ROUND_COUNT; }
+"register" { return REGISTER; }
+"repeat_oid" { return REPEAT_OID; }
+"rounds" { return ROUNDS; } 
+"score" { return SCORE; }
+"subgame" { return SUBGAME; }
+"type" { return TYPE; }
+"language" { return LANGUAGE; }
+"unknown" { return UNKNOWN; }
 "welcome" {  return WELCOME; }
-
+"u1" { return U1; }
+"u2" { return U2; }
+"u6" { return U6; }
+"u7" { return U7; }
 "+=" { return ADD; }
 "&&" { return AND; }
 "==" { return OPERATOR_EQ; }

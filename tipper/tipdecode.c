@@ -17,6 +17,111 @@ static int usage() {
   return 1;
 }
 
+static void print_oidlist(FILE* out,const char* prefix,
+                          const struct gme_oidlist* ol)
+{
+  if (prefix) fputs(prefix,out);
+  fputc('{',out);
+  uint16_t i;
+  for (i=0; i<le16toh(ol->len); i++) {
+    if (i) fputc(',',out);
+    uint16_t oid=le16toh(ol->entries[i]);
+    fprintf(out,"%d",le16toh(ol->entries[i]));
+    /* Check for interval */
+    uint16_t j;
+    for (j=i+1; j<le16toh(ol->len); j++) {
+      uint16_t oidj=le16toh(ol->entries[j]);
+      if (oid+1!=oidj) break;
+      oid=oidj;
+    }
+    j--;
+    if (j>i) {
+      fprintf(out,"-%d",oid);
+      i=j;
+    }
+  }
+  fputs("}\n",out);
+}
+
+static void inline print_playlist(FILE* out,const char* prefix,
+                                  const struct gme_playlist* pl)
+{
+  if (prefix) fputs(prefix,out);
+  fputc('{',out);
+  uint16_t i;
+  for (i=0; i<le16toh(pl->len); i++) {
+    if (i) fputc(',',out);
+    fprintf(out,"%d",le16toh(pl->entries[i]));
+  }
+  fputs("}\n",out);
+}
+
+static void print_playlistlist(FILE* out,const char* prefix,
+                               const char* indent,
+                               const struct gme_playlistlist* pll,
+                               struct gme* gme)
+{
+  if (!pll || pll->len==0) return;
+  if (prefix) fputs(prefix,out);
+  fprintf(out,"{\n");
+  uint16_t i;
+  for (i=0; i<le16toh(pll->len); i++) {
+    const struct gme_playlist* pl=gme_playlistlist_get(gme,pll,i);
+    fputs("  ",out);
+    print_playlist(out,indent,pl);
+  }
+  if (indent) fputs(indent,out);
+  fputs("}\n",out);
+}
+
+static void print_oidplaylistlist(FILE* out,const char* name,
+                                  const struct gme_oidlist* ol,
+                                  const struct gme_playlistlist* pll,
+                                  struct gme* gme)
+{
+  if (ol->len==0 && pll->len==0) return;
+  fprintf(out,"    %s {\n",name);
+  print_oidlist(out,"      oids ",ol);
+  print_playlistlist(out,"      play ","      ",pll,gme);
+  fputs("    }\n",out);
+}
+
+static void print_subgame(FILE* out,const char* prefix,
+                          const struct gme_subgame* subgame,
+                          struct gme* gme)
+{
+  fprintf(out,"  %s {\n",prefix);
+  fprintf(out,"    u1 {");
+  uint16_t ui;
+  for (ui=0; ui<20; ui++) {
+    if (ui) fputc(',',out);
+    fprintf(out,"%d",subgame->raw[ui]);
+  }
+  fprintf(out,"}\n");
+  print_playlistlist(out,"    play ","    ",
+                     gme_subgame_get_playlistlist(subgame,gme,0),gme);
+  print_playlistlist(out,"    invalid ","    ",
+                     gme_subgame_get_playlistlist(subgame,gme,3),gme);
+  print_oidplaylistlist(out,"ok",gme_subgame_get_oids(subgame,0),
+                        gme_subgame_get_playlistlist(subgame,gme,1),
+                        gme);
+  print_oidplaylistlist(out,"unknown",gme_subgame_get_oids(subgame,1),
+                        gme_subgame_get_playlistlist(subgame,gme,2),
+                        gme);
+  print_oidplaylistlist(out,"false",gme_subgame_get_oids(subgame,2),
+                        gme_subgame_get_playlistlist(subgame,gme,5),
+                        gme);
+  print_playlistlist(out,"    u4 ","    ",
+                     gme_subgame_get_playlistlist(subgame,gme,4),gme);
+  print_playlistlist(out,"    u6 ","    ",
+                     gme_subgame_get_playlistlist(subgame,gme,6),gme);
+  print_playlistlist(out,"    u7 ","    ",
+                     gme_subgame_get_playlistlist(subgame,gme,7),gme);
+  print_playlistlist(out,"    u8 ","    ",
+                     gme_subgame_get_playlistlist(subgame,gme,8),gme);
+  fprintf(out,"  }\n");
+}
+
 int main(int argc,const char** argv) {
 
   const char* basename=NULL;
@@ -81,21 +186,91 @@ int main(int argc,const char** argv) {
       fprintf(out,";\n");
     }
   }
-  struct gme_playlistlist* pll=gme_get_welcome(gme);
-  if (pll) {
-    fprintf(out,"welcome {\n");
-    int i,j;
-    for (i=0; i<pll->len; i++) {
-      struct gme_playlist* pl=gme_playlistlist_get(gme,pll,i);
-      fprintf(out,"  {");
-      for (j=0; j<pl->len; j++) {
-        if (j) fputc(',',out);
-        fprintf(out," %d",gme_playlist_get(pl,j));
+
+  print_playlistlist(out,"welcome ",NULL,gme_get_welcome(gme),gme);
+
+#if 1
+  {
+    uint16_t i;
+    struct gme_games_table* games=gme_get_games(gme);
+    fprintf(out,"# %d games\n",games->len);
+    for (i=0; i<games->len; i++) {
+      struct gme_game* game=gme_games_get(games,gme,i);
+      if (le16toh(game->type)==253) {
+        fprintf(out,"# game %d if of type 253\n",i);
+        continue;
       }
-      fprintf(out," }\n");
+      fprintf(out,"game %d {\n",i);
+      fprintf(out,"  type %d\n",game->type);
+      if (game->type==253) {
+        fprintf(out,"}\n");
+        continue;
+      }
+      fprintf(out,"  rounds %d\n",game->rounds);
+      if (game->type==6) {
+        fprintf(out,"  u1 {");
+        uint16_t n=0;
+        for (n=0; n<4; n++) {
+          if (n) fputc(',',out);
+          fprintf(out,"%d",game->raw[n]);
+        };
+        fprintf(out,"}\n");
+      }
+      fprintf(out,"  pre_last_round_count %d\n",gme_game_get_pre_last_round_count(game));
+      fprintf(out,"  repeat_oid %d\n",gme_game_get_repeat_oid(game));
+      {
+        fprintf(out,"  u2 {%d",gme_game_get_u2(game,0));
+        uint16_t n;
+        for (n=1; n<3; n++) {
+          fprintf(out,",%d",gme_game_get_u2(game,n));
+        }
+        fprintf(out,"}\n");
+      }
+      /* Print game playlistlists */
+      {
+        uint16_t pi;
+        static const char* pllnames[]={
+          "  welcome ",
+          "  next_level ",
+          "  bye ",
+          "  next_round ",
+          "  last_round ",
+          "  ignored1 ",
+          "  ignored2 "
+        };
+        for (pi=0; pi<((game->type==6) ? 7 : 5); pi++) {
+          print_playlistlist(out,pllnames[pi],"  ",
+                             gme_game_get_playlistlist(game,gme,pi),gme);
+        }
+      }
+      /* Print subgames */
+      {
+        uint16_t si;
+        for (si=0; si<le16toh(game->subgames_len); si++) {
+          struct gme_subgame* subgame=gme_game_get_subgame(game,gme,si);
+          print_subgame(out,"subgame",subgame,gme);
+        }
+        for (si=0; si<le16toh(game->c); si++) {
+          struct gme_subgame* bonusgame=gme_game_get_bonusgame(game,gme,si);
+          print_subgame(out,"bonusgame",bonusgame,gme);
+        }
+      }
+      /* Print scores */
+      {
+        uint16_t si;
+        const struct gme_scorelist* sl;
+        char buffer[20];
+        for (si=0; si<10; si++) {
+          sl=gme_game_get_scorelist(game,gme);
+          snprintf(buffer,sizeof(buffer),"  score %d ",sl->scores[si]);
+          print_playlistlist(out,buffer,"  ",(struct gme_playlistlist*)
+                             gme_get_ptr(gme,sl->plls[si]),gme);
+        }
+      }
+      fprintf(out,"}\n");
     }
-    fprintf(out,"}\n");
   }
+#endif
 
   uint32_t i;
   for (i=st->first_oid; i<=st->last_oid; i++) {
