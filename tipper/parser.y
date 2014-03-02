@@ -135,6 +135,7 @@ void yyerror(const char *s) {
  {
    if (list_lookup((struct list_entry*) *root,registercmp,name)) {
      MYERROR("register %s already exists",name);
+     free(name);
      return;
    }
    struct register_entry* entry=malloc(sizeof(struct register_entry));
@@ -164,6 +165,59 @@ void yyerror(const char *s) {
    return 0;
  }
 
+ /* A linked list sorted by name */
+ struct game_entry {
+   struct list_entry list;
+   char* name;
+   int n;
+ };
+
+ static struct game_entry* games;
+ static struct gme_games_table* gme_games;
+
+ static int gamecmp(const struct list_entry* e,const void* name) {
+   return strcmp(((struct game_entry*) e)->name,name);
+ }
+
+ static void gamefree(struct list_entry* e) {
+   free(((struct game_entry*) e)->name);
+ }
+
+ static void create_game(char* name,uint32_t game_off)
+ {
+   uint32_t l=le32toh(gme_games->len);
+   if (list_lookup((struct list_entry*) games,gamecmp,name)) {
+     MYERROR("game %s already exists",name);
+   } else {
+     struct game_entry* entry=malloc(sizeof(struct game_entry));
+     entry->list.next=NULL;
+     entry->name=name;
+     entry->n=l;
+     list_insert((struct list_entry**) &games,gamecmp,
+                 (struct list_entry*) entry,name);
+   }
+   gme_games=realloc(gme_games,8+4*l);
+   gme_games->len=htole32(l+1);
+   gme_games->game_offs[l]=game_off;
+ }
+
+ static int get_game(char* name) {
+   struct game_entry* e=(struct game_entry*)
+     list_lookup((struct list_entry*) games,gamecmp,name);
+   if (e) {
+     free(name);
+     return e->n;
+   }
+   MYERROR("Unknown game %s",name);
+   free(name);
+   return 0;
+ }
+
+ struct gme_subgamelist {
+   uint32_t len;
+   uint32_t offs[];
+ };
+
  static unsigned char* sbuffer;
  static size_t sbuffer_allocated,sbuffer_used;
 
@@ -176,6 +230,20 @@ void yyerror(const char *s) {
    memcpy(sbuffer+sbuffer_used,p,len);
    sbuffer_used+=len;
    return toReturn;
+ }
+
+ static struct gme_oidlist* empty_oidlist() {
+   struct gme_oidlist* ol=malloc(2);
+   ol->len=0;
+   return ol;
+ }
+
+ static uint32_t empty_list() {
+   static uint32_t p=0;
+   if (!p) {
+     p=sbuffer_append(&p,2);
+   }
+   return p;
  }
 
  struct oid_entry {
@@ -312,6 +380,9 @@ int tipparse(const char* fn) {
   gme_registers->len=0;
   line_pl=NULL;
   global_registers=NULL;
+  games=NULL;
+  gme_games=malloc(4);
+  gme_games->len=0;
   global_oids=NULL;
 
   sbuffer=malloc(BUFFER_BLOCK);
@@ -321,6 +392,7 @@ int tipparse(const char* fn) {
   toReturn=yyparse();
 
   list_free((struct list_entry*) global_registers,registerfree);
+  list_free((struct list_entry*) games,gamefree);
 
   gme.u.header.regs_off=htole32(sbuffer_append
                                 (gme_registers,
@@ -434,11 +506,21 @@ int tipparse(const char* fn) {
   uint32_t u32;
   uint16_t u16;
   char* name;
-  unsigned char arr[8];
+  unsigned char arr[20];
   struct gme_script_line* sl;
+  struct gme_subgamelist* sgl;
   struct gme_playlistlist* pll;
   struct gme_playlist* pl;
+  struct gme_oidlist* ol;
   struct gme_script* script;
+  struct {
+    uint16_t value;
+    uint32_t play;
+  } score;
+  struct {
+    struct gme_oidlist* oidlist;
+    uint32_t playlist;
+  } oidplaylist;
 }
 
 %token FORMAT
@@ -448,24 +530,44 @@ int tipparse(const char* fn) {
 %token WELCOME
 %token AND ADD OPERATOR_EQ OPERATOR_GE OPERATOR_NEQ
 %token NUM
-%token BONUSGAME GAME IGNORED1 IGNORED2 ROUNDS TYPE PRE_LAST_ROUND_COUNT
+%token BONUSGAME BYE GAME IGNORED1 IGNORED2 ROUNDS TYPE PRE_LAST_ROUND_COUNT
 %token NEXT_LEVEL NEXT_ROUND LAST_ROUND SCORE SUBGAME PLAY INVALID OK FALSE
-%token OIDS REPEAT_OID U1 U2 U6 U7 UNKNOWN
+%token OIDS REPEAT_OID U1 U2 U4 U6 U7 U8 UNKNOWN
 %token <name> IDENTIFIER STRING
-%type <arr> condition action command value
-%type <u16> operator media
-%type <u32> NUM scriptline
+%type <arr> condition action command value sgu1 u1 u2
+%type <u16> operator media type rounds pre_last_round_count repeat_oid
+%type <u32> NUM scriptline subgame bonusgame
+ /* some playlistlists */
+%type <u32> bye playlistlist welcome next_level next_round last_round ignored1
+            ignored2 play invalid sgu4 sgu6 sgu7 sgu8
+%type <ol> oids oidlist oidlistmember
 %type <sl> conditions actions actionlist
 %type <pl> medias playlist
-%type <pll> playlists playlistlist
+%type <pll> playlists
+%type <score> score
+%type <oidplaylist> oidplaylist sgok sgunknown sgfalse
 %type <script> scriptlines
+%type <name> gameid
+%type <sgl> subgames bonusgames
 %destructor {
   free($$);
-   } <name> <pll> <sl> <pl>
+ } <name> <pll> <sl> <pl> <ol> <sgl>;
+%destructor {
+  free($$.oidlist);
+ } <oidlist>;
 %%
 
 start: product xor format publication language registers welcome
-       games scripttable;
+games scripttable {
+  gme.u.header.welcome_off=$7;
+  /* Write type 253 game */
+  static uint16_t c253=htole16(253);
+  uint32_t lg=sbuffer_append(&c253,2);
+  uint32_t l=le32toh(gme_games->len);
+  gme_games->len=htole32(l+1);
+  gme.u.header.games_off=sbuffer_append(gme_games,4+4*l);
+  sbuffer_append(&lg,4);
+ }
 
 product : PRODUCT NUM ';' {
  gme.u.header.product_id=$2;
@@ -556,129 +658,361 @@ oneregister: IDENTIFIER {
   };
              
 
-/* TODO */
-welcome: /* empty */ | WELCOME playlistlist {
-  gme.u.header.welcome_off=sbuffer_append($2,$2->len*4+2);
-  free($2);
+welcome: /* empty */ {
+  $$=empty_list();
+} | WELCOME playlistlist {
+  $$=$2;
+ };
+
+next_level: /* empty */ {
+  $$=empty_list();
+}
+| NEXT_LEVEL playlistlist {
+  $$=$2;
+ }
+
+bye: /* empty */ {
+  $$=empty_list();
+}
+| BYE playlistlist {
+  $$=$2;
+ }
+
+next_round: /* empty */ {
+  $$=empty_list();
+}
+| NEXT_ROUND playlistlist {
+  $$=$2;
+ }
+
+last_round: /* empty */ {
+  $$=empty_list();
+}
+| LAST_ROUND playlistlist {
+  $$=$2;
+ }
+
+ignored1: /* empty */ {
+  $$=empty_list();
+}
+| IGNORED1 playlistlist {
+  $$=$2;
+ }
+
+ignored2: /* empty */ {
+  $$=empty_list();
+}
+| IGNORED2 playlistlist {
+  $$=$2;
+ }
+
+play: /* empty */ {
+  $$=empty_list();
+}
+| PLAY playlistlist {
+  $$=$2;
+ }
+
+invalid: /* empty */ {
+  $$=empty_list();
+}
+| INVALID playlistlist {
+  $$=$2;
+ }
+
+games: /* empty */ | games game | game;
+
+game: GAME gameid '{' type rounds u1 pre_last_round_count repeat_oid u2
+    welcome next_level bye next_round last_round ignored1 ignored2
+    subgames bonusgames scores
+'}' {
+  struct gme_game g;
+  g.type=htole16($4);
+  g.subgames_len=$17->len;
+  g.rounds=htole16($5);
+  g.c=$18->len;
+  uint32_t g_off=sbuffer_append(&g,8);
+  if ($4==6) {
+    sbuffer_append($6,8);
+  }
+  sbuffer_append(&$7,2); /* pre_last_round_cound */
+  sbuffer_append(&$8,2); /* repeat oid */
+  sbuffer_append($9,6);  /* u2 */
+  sbuffer_append(&$10,4); /* welcome */
+  sbuffer_append(&$11,4); /* next level */
+  sbuffer_append(&$12,4); /* bye */
+  sbuffer_append(&$13,4); /* next_round */
+  sbuffer_append(&$14,4); /* last_round */
+  if ($4==6) {
+    sbuffer_append(&$15,4); /* ignored1 */
+    sbuffer_append(&$16,4); /* ignored2 */
+  }
+  uint32_t* p=$17->offs; /* subgames */
+  uint16_t l=le16toh($17->len);
+  while (l--) {
+    sbuffer_append(p,4);
+    p++;
+  }
+  p=$18->offs; /* bonusgames */
+  l=le16toh($18->len);
+  while (l--) {
+    sbuffer_append(p,4);
+    p++;
+  }
+  uint16_t scores[10];
+  uint32_t playlists[10];
+  /* TODO use real scores */
+  for (l=0; l<10; l++) {
+    scores[l]=0;
+    playlists[l]=empty_list();
+  }
+  uint16_t* p1=scores;
+  for (l=0; l<10; l++) {
+    sbuffer_append(p1,2);
+    p1++;
+  }
+  p=playlists;
+  for (l=0; l<10; l++) {
+    sbuffer_append(p,4);
+    p++;
+  }
+  create_game($2,g_off);
+  free($17);
+  free($18);
  };
 
 /* TODO */
-next_level: /* empty */ | NEXT_LEVEL playlistlist {
-  free($2);
- }
-
-/* TODO */
-next_round: /* empty */ | NEXT_ROUND playlistlist {
-  free($2);
- }
-
-/* TODO */
-last_round: /* empty */ | LAST_ROUND playlistlist {
-  free($2);
- }
-
-/* TODO */
-ignored1: /* empty */ | IGNORED1 playlistlist {
-  free($2);
- }
-
-/* TODO */
-ignored2: /* empty */ | IGNORED2 playlistlist {
-  free($2);
- }
-
-/* TODO */
-play: /* empty */ | PLAY playlistlist {
-  free($2);
- }
-
-/* TODO */
-invalid: /* empty */ | INVALID playlistlist {
-  free($2);
- }
-
-/* TODO */
-games: /* empty */ | games game | game;
-
-/* TODO */
-game: GAME newgameid '{' type rounds u1 pre_last_round_count repeat_oid u2
-    welcome next_level next_round last_round ignored1 ignored2
-    subgames bonusgames scores
-'}';
-
 scores: /* empty */ | scores score | score;
 
-/* TODO */
 score: SCORE NUM playlistlist {
+  $$.value=$2;
+  $$.play=$3;
+ }
+
+
+subgames: /* empty */ {
+  $$=malloc(4);
+  $$->len=0;
+}
+| subgames subgame {
+  uint32_t l=le32toh($1->len);
+  $$=realloc($1,8+4*l);
+  $$->len=htole32(l+1);
+  $$->offs[l]=$2;
+ }
+| subgame {
+  $$=malloc(8);
+  $$->len=htole32(1);
+  $$->offs[0]=$1;
+  };
+
+subgame: SUBGAME '{' sgu1 play invalid sgok sgunknown sgfalse sgu4 sgu6 sgu7 sgu8 '}' {
+  $$=sbuffer_append($3,20);
+  sbuffer_append($6.oidlist,2+2*(le16toh($6.oidlist->len))); /* OK oids */
+  free($6.oidlist);
+  sbuffer_append($7.oidlist,2+2*(le16toh($7.oidlist->len))); /* unknown oids */
+  free($7.oidlist);
+  sbuffer_append($8.oidlist,2+2*(le16toh($8.oidlist->len))); /* false oids */
+  free($8.oidlist);
+  sbuffer_append(&$4,4);
+  sbuffer_append(&$6.playlist,4);
+  sbuffer_append(&$7.playlist,4);
+  sbuffer_append(&$5,4);
+  sbuffer_append(&$9,4);
+  sbuffer_append(&$8.playlist,4);
+  sbuffer_append(&$10,4);
+  sbuffer_append(&$11,4);
+  sbuffer_append(&$12,4);
+ }
+
+bonusgames: /* empty */ {
+  $$=malloc(4);
+  $$->len=0;
+}
+| bonusgames bonusgame {
+  uint32_t l=le32toh($1->len);
+  $$=realloc($1,8+4*l);
+  $$->len=htole32(l+1);
+  $$->offs[l]=$2;
+ }
+| bonusgame {
+  $$=malloc(8);
+  $$->len=htole32(1);
+  $$->offs[0]=$1;
+  };
+
+bonusgame: BONUSGAME '{' sgu1 play invalid sgok sgunknown sgfalse sgu4 sgu6 sgu7 sgu8 '}'
+ {
+  $$=sbuffer_append($3,20);
+  sbuffer_append($6.oidlist,2+2*(le16toh($6.oidlist->len))); /* OK oids */
+  free($6.oidlist);
+  sbuffer_append($7.oidlist,2+2*(le16toh($7.oidlist->len))); /* unknown oids */
+  free($7.oidlist);
+  sbuffer_append($8.oidlist,2+2*(le16toh($8.oidlist->len))); /* false oids */
+  free($8.oidlist);
+  sbuffer_append(&$4,4);
+  sbuffer_append(&$6.playlist,4);
+  sbuffer_append(&$7.playlist,4);
+  sbuffer_append(&$5,4);
+  sbuffer_append(&$9,4);
+  sbuffer_append(&$8.playlist,4);
+  sbuffer_append(&$10,4);
+  sbuffer_append(&$11,4);
+  sbuffer_append(&$12,4);
+ };
+
+sgu1: U1 '{' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM '}' {
+  unsigned char* p=$$;
+  *(p++)=$3;
+  *(p++)=$5;
+  *(p++)=$7;
+  *(p++)=$9;
+  *(p++)=$11;
+  *(p++)=$13;
+  *(p++)=$15;
+  *(p++)=$17;
+  *(p++)=$19;
+  *(p++)=$21;
+  *(p++)=$23;
+  *(p++)=$25;
+  *(p++)=$27;
+  *(p++)=$29;
+  *(p++)=$31;
+  *(p++)=$33;
+  *(p++)=$35;
+  *(p++)=$37;
+  *(p++)=$39;
+  *(p++)=$41;
+ }
+
+sgok: /* empty */ {
+  $$.oidlist=empty_oidlist();
+  $$.playlist=empty_list();
+}
+| OK oidplaylist {
+  $$=$2;
+ };
+sgunknown: /* empty */ {
+  $$.oidlist=empty_oidlist();
+  $$.playlist=empty_list();
+}
+| UNKNOWN oidplaylist {
+  $$=$2;
+ };
+sgfalse: FALSE oidplaylist {
+  $$=$2;
+ };
+
+sgu4: /* empty */ {
+  $$=empty_list();
+}
+| U4 playlistlist {
+  $$=$2;
+ }
+
+sgu6: /* empty */ {
+  $$=empty_list();
+}
+| U6 playlistlist {
+  $$=$2;
+ }
+
+sgu7: /* empty */ {
+  $$=empty_list();
+}
+| U7 playlistlist {
+  $$=$2;
+ }
+
+sgu8: /* empty */ {
+  $$=empty_list();
+}
+| U8 playlistlist {
+  $$=$2;
+ }
+
+oidplaylist: '{' oids play '}' {
+  $$.oidlist=$2;
+  $$.playlist=$3;
+ };
+
+oids: /* empty */ {
+  $$=empty_oidlist();
+}
+| OIDS '{' oidlist '}' {
+  $$=$3;
+  };
+
+oidlist: /* empty */ {
+  $$=empty_oidlist();
+}
+| oidlist ',' oidlistmember {
+  uint16_t l1=le16toh($1->len);
+  uint16_t l3=le16toh($3->len);
+  $$=(struct gme_oidlist*) realloc($1,2+2*(l1+l3));
+  $$->len=htole16(l1+l3);
+  memcpy($$->entries+l1,$3->entries,l3*2);
   free($3);
+  }
+| oidlistmember {
+  $$=$1;
+  };
+
+oidlistmember: NUM {
+  $$=(struct gme_oidlist*) malloc(4);
+  $$->len=htole16(1);
+  $$->entries[0]=htole16($1);
  }
+| NUM '-' NUM {
+  if ($3<$1) MYERROR("OIDs not increasing");
+  uint16_t l=$3-$1+1;
+  $$=(struct gme_oidlist*) malloc(2+l*2);
+  $$->len=htole16(l);
+  uint16_t v=$1;
+  uint16_t* p=$$->entries;
+  while (l--) {
+    *(p++)=v++;
+  }
+  };
 
+type: TYPE NUM { $$=$2; }
 
-/* TODO */
-subgames: /* empty */ | subgames subgame | subgame;
+rounds: ROUNDS NUM { $$=$2; }
 
-/* TODO */
-subgame: SUBGAME '{' sgu1 play invalid sgok sgfalse sgu6 sgu7 '}';
-
-/* TODO */
-bonusgames: /* empty */ | bonusgames bonusgame | bonusgame;
-
-/* TODO */
-bonusgame: BONUSGAME '{' sgu1 play invalid sgok sgunknown sgfalse sgu6 sgu7 '}';
-
-/* TODO */
-sgu1: U1 '{' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM '}';
-
-/* TODO */
-sgok: /* empty */ | OK oidplaylist;
-/* TODO */
-sgunknown: /* empty */ | UNKNOWN oidplaylist;
-/* TODO */
-sgfalse: FALSE oidplaylist;
-
-/* TODO */
-sgu6: /* empty */ | U6 playlistlist {
-  free($2);
+gameid: NUM {
+  char buffer[16];
+  snprintf(buffer,sizeof(buffer),"%d",$1);
+  $$=strdup(buffer);
  }
+| STRING {
+  $$=$1;
+  };
 
-/* TODO */
-sgu7: /* empty */ | U7 playlistlist {
-  free($2);
- }
+pre_last_round_count: PRE_LAST_ROUND_COUNT NUM { $$=$2; };
 
-/* TODO */
-oidplaylist: '{' oids play '}';
+repeat_oid: REPEAT_OID NUM { $$=$2; };
 
-/* TODO */
-oids: /* empty */ | OIDS '{' oidlist '}';
+u1: /* EMPTY */ {
+  memset($$,0,4);
+}
+| U1 '{' NUM ',' NUM ',' NUM ',' NUM '}' {
+  unsigned char* p=$$;
+  *(p++)=$3;
+  *(p++)=$5;
+  *(p++)=$7;
+  *(p++)=$9;
+  };
 
-/* TODO */
-oidlist: /* empty */ | oidlist ',' oidlistmember | oidlistmember;
-
-oidlistmember: NUM | NUM '-' NUM;
-
-/* TODO */
-type: TYPE NUM
-
-/* TODO */
-rounds: ROUNDS NUM
-
-/* TODO */
-newgameid: NUM | STRING;
-
-pre_last_round_count: PRE_LAST_ROUND_COUNT NUM;
-
-/* TODO */
-repeat_oid: REPEAT_OID NUM;
-
-/* TODO */
-u1: /* EMPTY */ | U1 '{' NUM ',' NUM ',' NUM ',' NUM '}';
-
-/* TODO */
-u2: U2 '{' NUM ',' NUM ',' NUM '}';
+u2: U2 '{' NUM ',' NUM ',' NUM '}' {
+  unsigned char* p=$$;
+  *(p++)=$3;
+  *(p++)=$5;
+  *(p++)=$7;
+ };
 
 playlistlist: '{' playlists '}' {
-  $$=$2;
+  $$=sbuffer_append($2,$2->len*4+2);
+  free($2);
  };
 
 playlists: playlists playlist {
@@ -911,13 +1245,15 @@ command: 'P' '(' medias ')' {
   p+=2;
   memset(p,0,3);
   }
-| 'G' '(' value ')' {
+| 'G' '(' gameid ')' {
   unsigned char* p=$$;
   *(uint16_t*) p=0;
   p+=2;
   *(uint16_t*) p=htole16(0xfd00);
   p+=2;
-  memcpy(p,$3,3);
+  uint16_t g=htole16(get_game($3));
+  *(p++)=1;
+  memcpy(p,&g,2);
   }
 ;
 

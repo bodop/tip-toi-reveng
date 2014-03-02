@@ -23,6 +23,7 @@ HEX "0x"[0-9a-fA-F]+
 %%
 
 "bonusgame" { return BONUSGAME; }
+"bye" { return BYE; }
 "false" { return FALSE; }
 "format" { return FORMAT; }
 "game" { return GAME; }
@@ -50,9 +51,11 @@ HEX "0x"[0-9a-fA-F]+
 "unknown" { return UNKNOWN; }
 "welcome" {  return WELCOME; }
 "u1" { return U1; }
+"u4" { return U4; }
 "u2" { return U2; }
 "u6" { return U6; }
 "u7" { return U7; }
+"u8" { return U8; }
 "+=" { return ADD; }
 "&&" { return AND; }
 "==" { return OPERATOR_EQ; }
