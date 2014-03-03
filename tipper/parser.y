@@ -1055,7 +1055,7 @@ media: STRING {
   $$=get_media_index(buffer);
   };
 
-scripttable: onescript scripttable | onescript;
+scripttable: scripttable onescript | onescript;
 
 onescript: NUM '{' scriptlines '}' {
   if (list_lookup((struct list_entry*) global_oids,oidcmp,&$1)) {
