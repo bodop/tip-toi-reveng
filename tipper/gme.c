@@ -205,7 +205,8 @@ int gme_script_line_print(struct gme_script_line* line,FILE *f) {
       if (err<0) return -err;
     }
   }
-  err=fprintf(f," ? {");
+  if (line->conditions) err=fputs(" ? ",f);
+  fputc('{',f);
   if (err<0) return -err;
   
   struct gme_playlist* pl=gme_script_line_playlist(line);
