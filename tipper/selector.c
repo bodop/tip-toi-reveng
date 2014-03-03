@@ -56,13 +56,14 @@ consoleselector consoleselector_new(tiptoi t) {
   consoleselector toReturn=malloc(sizeof(struct _consoleselector));
   tipselector_init(&toReturn->sup,t,console_onselect);
   toReturn->i=0;
-  int flags=fcntl(0,F_GETFL);
-  if (fcntl(0,F_SETFL,flags | O_NONBLOCK)) {
+  int flags=fcntl(STDIN_FILENO,F_GETFL);
+  if (fcntl(STDIN_FILENO,F_SETFL,flags | O_NONBLOCK)) {
     perror("fcntl");
   }
   fprintf(stdout,"Next OID: ");
   fflush(stdout);
-  if (t->max_set_fd<=0) t->max_set_fd=0;
+  FD_SET(STDIN_FILENO,&t->listeners);
+  if (t->max_set_fd<=STDIN_FILENO) t->max_set_fd=STDIN_FILENO;
   return toReturn;
 }
 
