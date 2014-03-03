@@ -2,7 +2,6 @@
 
 #include <stdlib.h>
 #include <stdio.h>
-#include <parser.h>
 #include <string.h>
 #include <gme.h>
 #include <time.h>
@@ -35,7 +34,7 @@ extern FILE* yyin;
    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
-   0,0,0,0,0x3b,0,0,0,0,0,0,0,0,0,0,0,
+   0,0,0,0,0x3b,0,0,0,0,0xad,0,0,0,0,0,0,
    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
    0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
@@ -121,6 +120,7 @@ void yyerror(const char *s) {
  };
 
  static struct register_entry* global_registers;
+ static struct register_entry* local_registers;
  
  static int registercmp(const struct list_entry* e,const void* name) {
    return strcmp(((struct register_entry*) e)->name,name);
@@ -154,15 +154,23 @@ void yyerror(const char *s) {
  }
 
  static int get_register(char* name) {
+   int toReturn;
    struct register_entry* e=(struct register_entry*)
-     list_lookup((struct list_entry*) global_registers,registercmp,name);
+     list_lookup((struct list_entry*) local_registers,registercmp,name);
    if (e) {
-     free(name);
-     return e->n;
+     toReturn=e->n;
+   } else {
+     e=(struct register_entry*)
+       list_lookup((struct list_entry*) global_registers,registercmp,name);
+     if (e) {
+       toReturn=e->n;
+     } else {
+       MYERROR("Unknown register %s",name);
+       toReturn=0;
+     }
    }
-   MYERROR("Unknown register %s",name);
    free(name);
-   return 0;
+   return toReturn;
  }
 
  /* A linked list sorted by name */
@@ -380,6 +388,7 @@ int tipparse(const char* fn) {
   gme_registers->len=0;
   line_pl=NULL;
   global_registers=NULL;
+  local_registers=NULL;
   games=NULL;
   gme_games=malloc(4);
   gme_games->len=0;
@@ -460,9 +469,9 @@ int tipparse(const char* fn) {
     char fnbuffer[256];
     int i;
     /* Skip space for media table itself */
-    media_off+=mediafiles_n*8;
+    media_off+=mediafiles_used*8;
     /* First print offsets and lengths */
-    for (i=0; i<mediafiles_n; i++) {
+    for (i=0; i<mediafiles_used; i++) {
       struct dirent* dirent=mediafiles[i];
       snprintf(fnbuffer,sizeof(fnbuffer),"%s/%s",mediadir,dirent->d_name);
       stat(fnbuffer,&statbuf);
@@ -472,7 +481,7 @@ int tipparse(const char* fn) {
       media_off+=s;
     }
     /* And the files itself */
-    for (i=0; i<mediafiles_n; i++) {
+    for (i=0; i<mediafiles_used; i++) {
       struct dirent* dirent=mediafiles[i];
       snprintf(fnbuffer,sizeof(fnbuffer),"%s/%s",mediadir,dirent->d_name);
       FILE* m=fopen(fnbuffer,"r");
@@ -501,6 +510,13 @@ int tipparse(const char* fn) {
 
 %code requires {
 #include <stdint.h>
+
+ struct score {
+   uint16_t len;
+   uint16_t value[10];
+   uint32_t play[10];
+ };
+
  }
 %union {
   uint32_t u32;
@@ -513,10 +529,7 @@ int tipparse(const char* fn) {
   struct gme_playlist* pl;
   struct gme_oidlist* ol;
   struct gme_script* script;
-  struct {
-    uint16_t value;
-    uint32_t play;
-  } score;
+  struct score score;
   struct {
     struct gme_oidlist* oidlist;
     uint32_t playlist;
@@ -544,7 +557,7 @@ int tipparse(const char* fn) {
 %type <sl> conditions actions actionlist
 %type <pl> medias playlist
 %type <pll> playlists
-%type <score> score
+%type <score> score scores
 %type <oidplaylist> oidplaylist sgok sgunknown sgfalse
 %type <script> scriptlines
 %type <name> gameid
@@ -557,7 +570,7 @@ int tipparse(const char* fn) {
  } <oidlist>;
 %%
 
-start: product xor format publication language registers welcome
+start: product xor format publication language global_registers welcome
 games scripttable {
   gme.u.header.welcome_off=$7;
   /* Write type 253 game */
@@ -644,17 +657,31 @@ publication: /* no publication date */ | PUBLICATION STRING ';' {
   free($2);
  };
 
-registers: registerdef | registerdef registers;
+global_registers: global_registerdef | global_registers global_registerdef;
 
-registerdef: REGISTER registerlist ';';
+global_registerdef: REGISTER global_registerlist ';';
 
-registerlist: oneregister ',' registerlist | oneregister;
+global_registerlist: global_registerlist ',' global_oneregister | global_oneregister;
 
-oneregister: IDENTIFIER {
+global_oneregister: IDENTIFIER {
   create_register(&global_registers,$1,0);
  }
 | IDENTIFIER '=' NUM {
   create_register(&global_registers,$1,$3);
+  };
+             
+
+local_registers: /* empty */ | local_registerdef | local_registers local_registerdef;
+
+local_registerdef: REGISTER local_registerlist ';';
+
+local_registerlist: local_registerlist ',' local_oneregister | local_oneregister;
+
+local_oneregister: IDENTIFIER {
+  create_register(&local_registers,$1,0);
+ }
+| IDENTIFIER '=' NUM {
+  create_register(&local_registers,$1,$3);
   };
              
 
@@ -762,9 +789,14 @@ game: GAME gameid '{' type rounds u1 pre_last_round_count repeat_oid u2
   uint16_t scores[10];
   uint32_t playlists[10];
   /* TODO use real scores */
-  for (l=0; l<10; l++) {
+  for (l=0; l<$19.len; l++) {
+    scores[l]=$19.value[l];
+    playlists[l]=$19.play[l];
+  }
+  while (l<10) {
     scores[l]=0;
     playlists[l]=empty_list();
+    l++;
   }
   uint16_t* p1=scores;
   for (l=0; l<10; l++) {
@@ -782,11 +814,27 @@ game: GAME gameid '{' type rounds u1 pre_last_round_count repeat_oid u2
  };
 
 /* TODO */
-scores: /* empty */ | scores score | score;
+scores: /* empty */ {
+  $$.len=0;
+}
+| scores score {
+  $$=$1;
+  if ($$.len==10) {
+    MYERROR("Only ten scores allowed per game.");
+  } else {
+    $$.value[$$.len]=$2.value[0];
+    $$.play[$$.len]=$2.play[0];
+    $$.len++;
+  }
+ }
+| score {
+  $$=$1;
+  };
 
 score: SCORE NUM playlistlist {
-  $$.value=$2;
-  $$.play=$3;
+  $$.len=1;
+  $$.value[0]=$2;
+  $$.play[0]=$3;
  }
 
 
@@ -1057,18 +1105,20 @@ media: STRING {
 
 scripttable: scripttable onescript | onescript;
 
-onescript: NUM '{' scriptlines '}' {
+onescript: NUM '{' local_registers scriptlines '}' {
   if (list_lookup((struct list_entry*) global_oids,oidcmp,&$1)) {
     MYERROR("Duplicate definition of OID %d",$1);
   } else {
    struct oid_entry* entry=malloc(sizeof(struct oid_entry));
    entry->list.next=NULL;
    entry->oid=$1;
-   entry->offset=sbuffer_append($3,le16toh($3->lines)*4+2);
+   entry->offset=sbuffer_append($4,le16toh($4->lines)*4+2);
    list_insert((struct list_entry**) &global_oids,oidcmp,
                (struct list_entry*) entry,&$1);
-   free($3);
+   free($4);
   }
+  list_free((struct list_entry*) local_registers,registerfree);
+  local_registers=NULL;
  };
 
 scriptlines: scriptlines scriptline {
