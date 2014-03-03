@@ -40,7 +40,9 @@ game header
 a = 16bit type (type 253 is special see below)
 b = 16bit count: number of subgames
 r = 16bit number of rounds to play in this game
-c = 16bit count (if type == 6) followed by c*16bit; (if type != 6) c=0 or c=1 
+c = 16bit count of bonus rounds? If type == 6, followed by 4*16bit (is
+this abcr of the bonus rounds?). If
+type != 6 c is always 0 or 1 
 z = 16bit: number of rounds to start with the "pre next round" sound, after that play the "pre last round" sound  
 y = 16bit: this defines the OID that triggers the "repeat last media" action
 x = 16bit unknown
@@ -58,6 +60,8 @@ h = 2 * 32bit pointers to playlistlist (only for game type 6, not in this exampl
 e = b * 32bit pointers to subgame  
 f = c * 32bit pointers to subgame (not existant in this example game)
 u = 10 (this seems hardcoded) * 16bit. For each playlist in the playlistlist g u contains a 16bit value. At the end of the game u is checked from left to right. Each number in u is compared against the number of correct answers that the player has achieved throughout the game. The first number in u that is <= the number of correct answers defines the playlist to be played. u must be ordered in descending order. Example: u contains [5,3,1,0,0,0,0,0,0,0]. This means: if the player has 5 or more correct answers, the first playlist of g is played, when the player has 3 or 4 correct answers, the second playlist is played, if he has at least one correct answer, playlist 3 is played else playlist 4. 
+If bonus rounds are present this array also contains the scores and
+playlist of the bonus rounds (in descending order after the first zero).
 g = 10 (this seems hardcoded) * 32bit pointer to playlistlist
 
 now it differs on type 
