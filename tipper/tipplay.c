@@ -20,7 +20,7 @@ static uint16_t get_operand(unsigned char**p,struct gme_registers* regs) {
 static int gme_script_line_match(struct gme_script_line* line,
                                  struct gme_registers* r)
 {
-  int i=line->conditions;
+  int i=le16toh(line->conditions);
   unsigned char* p=line->raw;
   while (i--) {
     uint16_t a=get_operand(&p,r);
@@ -51,15 +51,15 @@ static int gme_script_line_match(struct gme_script_line* line,
 static int gme_script_line_execute(struct gme* gme,struct gme_script_line* sl,
                                    struct gme_registers* regs)
 {
-  unsigned char* p=sl->raw+sl->conditions*8;
+  unsigned char* p=sl->raw+le16toh(sl->conditions)*8;
 
   /* Number of actions */
-  uint16_t i=*(uint16_t*) p;
+  uint16_t i=le16toh(*(uint16_t*) p);
   p+=2;
   while (i--) {
-    uint16_t r=*(uint16_t*) p;
+    uint16_t r=le16toh(*(uint16_t*) p);
     p+=2;
-    uint16_t c=*(uint16_t*) p;
+    uint16_t c=le16toh(*(uint16_t*) p);
     p+=2;
     uint16_t m=get_operand(&p,regs);
     switch (c) {
