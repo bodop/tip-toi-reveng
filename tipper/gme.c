@@ -80,9 +80,21 @@ struct gme* gme_load(const char* path) {
     }
   }
   
+#ifndef N_DEBUG
   /* check games */
-  gme_get_games(gme);
-
+  {
+    struct gme_games_table* games=gme_get_games(gme);
+    uint16_t gi;
+    for (gi=0; gi<le16toh(games->len); gi++) {
+      struct gme_game* game=gme_games_get(games,gme,gi);
+      if (gi+1==le16toh(games->len)) {
+        assert(game->type==253);
+        break;
+      }
+      assert(game->rounds<=game->subgames_len);
+    }
+  }
+#endif
   /* Check checksum */
   {
     uint32_t sum=0;
@@ -149,7 +161,7 @@ static unsigned char* print_operand(unsigned char* p,FILE *f) {
   return p+2;
 }
 
-uint16_t gme_playlist_get(struct gme_playlist* pl,uint16_t i) {
+uint16_t gme_playlist_get(const struct gme_playlist* pl,uint16_t i) {
   assert(i<=pl->len);
   return pl->entries[i];
 }

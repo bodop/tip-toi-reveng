@@ -3,6 +3,9 @@
 #include <stdint.h>
 #include <stdio.h>
 
+#define GME_GAME_WELCOME 0
+#define GME_SUBGAME_PLAY 0
+
 #pragma pack(push,1)
 struct gme_header {
   uint32_t play_off;
@@ -115,7 +118,7 @@ gme_script_get(struct gme*,struct gme_script*,uint16_t line);
 int gme_script_line_print(struct gme_script_line*,FILE*);
 struct gme_playlist*
 gme_script_line_playlist(struct gme_script_line*);
-uint16_t gme_playlist_get(struct gme_playlist*,uint16_t);
+uint16_t gme_playlist_get(const struct gme_playlist*,uint16_t);
 struct gme_playlist*
 gme_playlistlist_get(struct gme*,const struct gme_playlistlist*,uint16_t);
 uint32_t gme_media_table_count(struct gme*,struct gme_media_table*);
