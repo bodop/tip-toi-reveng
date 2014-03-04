@@ -3,6 +3,7 @@
 
 #include <tipplay.h>
 #include <stdio.h>
+#include <gme.h>
 
 typedef struct _consoleselector* consoleselector;
 
@@ -33,9 +34,16 @@ struct _mediaselector {
   int kill_on_append;
   struct media_play* current;
   struct media_play** append_pos;
+  size_t last_play_len;
+  size_t last_play_allocated;
+  uint16_t* last_play;
 };
 
 void mediaselector_append(mediaselector ME,tiptoi t,uint16_t media_n);
+void mediaselector_append_pl(mediaselector ME,tiptoi t,const struct gme_playlist* pl);
+void mediaselector_append_pll(mediaselector,tiptoi,const struct gme_playlistlist*);
+void mediaselector_repeat(mediaselector ME,tiptoi t);
+
 mediaselector mediaselector_new();
 
 typedef struct _acceptselector* acceptselector;

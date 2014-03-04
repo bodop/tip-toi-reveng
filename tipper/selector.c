@@ -184,6 +184,8 @@ mediaselector mediaselector_new(tiptoi t) {
   }
   FD_SET(ME->sigfd,&t->listeners);
   if (ME->sigfd>t->max_set_fd) t->max_set_fd=ME->sigfd;
+  ME->last_play=malloc(sizeof(uint16_t)*(ME->last_play_allocated=10));
+  ME->last_play_len=0;
   return ME;
 }
 
@@ -191,6 +193,7 @@ void mediaselector_append(mediaselector ME,tiptoi t,uint16_t media_off)
 {
   /* Kill current play queue? */
   if (ME->kill_on_append) {
+    ME->last_play_len=0;
     ME->kill_on_append=0;
     if (ME->fd>=0) {
       close(ME->fd);
@@ -211,6 +214,16 @@ void mediaselector_append(mediaselector ME,tiptoi t,uint16_t media_off)
     }
     ME->current=NULL;
   }
+
+  /* append media to the repeat queue */
+  if (ME->last_play_len==ME->last_play_allocated) {
+    ME->last_play_allocated+=10;
+    ME->last_play=realloc(ME->last_play,
+                          sizeof(uint16_t)*ME->last_play_allocated);
+  }
+  ME->last_play[ME->last_play_len]=media_off;
+  ME->last_play_len++;
+
   struct gme* gme=t->gme;
   struct gme_media_table* mt=gme_get_media(gme);
   assert(media_off<gme_media_table_count(gme,mt));
@@ -225,6 +238,33 @@ void mediaselector_append(mediaselector ME,tiptoi t,uint16_t media_off)
     mediaselector_open(ME,t);
   }
   ME->append_pos=&mp->next;
+}
+
+void mediaselector_append_pl(mediaselector ME,tiptoi t,const struct gme_playlist* pl)
+{
+  int j;
+  ME->last_play_len=0;
+  for (j=0; j<pl->len; j++) {
+    mediaselector_append(ME,t,gme_playlist_get(pl,j));
+  }
+}
+
+void mediaselector_append_pll(mediaselector ME,tiptoi t,const struct gme_playlistlist* pll)
+{
+  if (!pll->len) return;
+  int i=rand() % pll->len;
+  const struct gme_playlist* pl=gme_playlistlist_get(t->gme,pll,i);
+  mediaselector_append_pl(ME,t,pl);
+}
+
+void mediaselector_repeat(mediaselector ME,tiptoi t) {
+  uint16_t l=ME->last_play_len;
+  if (l) {
+    uint16_t i;
+    for (i=0; i<l; i++) {
+      mediaselector_append(ME,t,ME->last_play[i]);
+    }
+  }
 }
 
 #define ME ((acceptselector) s)
