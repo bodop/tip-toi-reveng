@@ -425,7 +425,14 @@ int tipparse(const char* fn) {
   gme.u.header.media_off=htole32(media_off);
   
   /* Now output */
-  FILE* cout=fopen("/tmp/out","w");
+  FILE* cout;
+  {
+    int l=strlen(fn);
+    char* buff=alloca(l+1);
+    strcpy(buff,fn);
+    strcpy(buff+l-4,".gme");
+    cout=fopen(buff,"w");
+  }
   if (!cout) {
     perror("Cannot open output");
     goto error1;
@@ -762,7 +769,7 @@ game: GAME gameid '{' type rounds u1 pre_last_round_count repeat_oid u2
   if ($4==6) {
     sbuffer_append($6,8);
   }
-  sbuffer_append(&$7,2); /* pre_last_round_cound */
+  sbuffer_append(&$7,2); /* pre_last_round_count */
   sbuffer_append(&$8,2); /* repeat oid */
   sbuffer_append($9,6);  /* u2 */
   sbuffer_append(&$10,4); /* welcome */
