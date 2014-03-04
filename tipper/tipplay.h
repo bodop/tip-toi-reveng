@@ -18,6 +18,10 @@ struct _tiptoi {
   struct gme* gme;
   mediaselector m;
   tipselector selectors;
+  struct gme_game* current_game;
+  uint16_t round;
+  uint16_t subgames_len; /* Sizeof subgame_len */
+  uint16_t* sg_shuff; /* Shuffled indexes */
 };
 
 void tiptoi_play_oid(tiptoi t,uint32_t oid);
