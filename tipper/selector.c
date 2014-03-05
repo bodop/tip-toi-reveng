@@ -272,7 +272,6 @@ static int acceptselector_onselect(tipselector s,tiptoi t) {
   if (FD_ISSET(ME->fd,&t->listeners)) {
     int fd=accept(ME->fd,NULL,NULL);
     if (fd>=0) {
-      printf("Connection accepted\n");
       httpselector_new(t,fd);
     }
   } else {

@@ -20,6 +20,7 @@ struct _tiptoi {
   tipselector selectors;
   struct gme_game* current_game;
   uint16_t round;
+  uint16_t score;
   uint16_t subgames_len; /* Sizeof subgame_len */
   uint16_t* sg_shuff; /* Shuffled indexes */
 };

@@ -5,6 +5,17 @@
 
 #define GME_GAME_WELCOME 0
 #define GME_SUBGAME_PLAY 0
+#define GME_SUBGAME_INVALID 3
+#define GME_SUBGAME_U4 4
+#define GME_SUBGAME_U6 6
+#define GME_SUBGAME_U7 7
+#define GME_SUBGAME_U8 8
+#define GME_SUBGAME_OK_OIDS 0
+#define GME_SUBGAME_OK_PLAY 1
+#define GME_SUBGAME_UNKNOWN_OIDS 1
+#define GME_SUBGAME_UNKNOWN_PLAY 2
+#define GME_SUBGAME_FALSE_OIDS 2
+#define GME_SUBGAME_FALSE_PLAY 5
 
 #pragma pack(push,1)
 struct gme_header {
@@ -138,6 +149,8 @@ struct gme_subgame* gme_game_get_subgame(const struct gme_game* g,struct gme*,ui
 struct gme_subgame* gme_game_get_bonusgame(const struct gme_game* g,struct gme*,uint16_t i);
 const struct gme_scorelist*
 gme_game_get_scorelist(const struct gme_game*,struct gme*);
+
+int gme_oidlist_contains(const struct gme_oidlist*,uint16_t oid);
 
 const struct gme_oidlist*
 gme_subgame_get_oids(const struct gme_subgame*,uint16_t);

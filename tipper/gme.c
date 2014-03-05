@@ -397,6 +397,18 @@ gme_game_get_scorelist(const struct gme_game* g,struct gme* gme) {
   return (struct gme_scorelist*) p;
 }
 
+int gme_oidlist_contains(const struct gme_oidlist* ol,uint16_t oid) {
+  oid=htole16(oid);
+  int i=ol->len;
+  const uint16_t* p=ol->entries;
+  while (i) {
+    if (*p==oid) return 1;
+    p++;
+    i--;
+  }
+  return 0;
+}
+
 const struct gme_oidlist*
 gme_subgame_get_oids(const struct gme_subgame* sb,uint16_t i)
 {
