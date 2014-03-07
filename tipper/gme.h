@@ -4,6 +4,10 @@
 #include <stdio.h>
 
 #define GME_GAME_WELCOME 0
+#define GME_GAME_NEXT_LEVEL 1
+#define GME_GAME_BYE 2
+#define GME_GAME_NEXT_ROUND 3
+#define GME_GAME_LAST_ROUND 4
 #define GME_SUBGAME_PLAY 0
 #define GME_SUBGAME_INVALID 3
 #define GME_SUBGAME_U4 4

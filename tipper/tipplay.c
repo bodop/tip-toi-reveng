@@ -203,6 +203,13 @@ void tiptoi_play_oid(tiptoi ME,uint32_t oid) {
       }
       ME->round++;
       if (ME->round<le16toh(g->rounds)) {
+        const struct gme_playlistlist* pll;
+        if (ME->round>=le16toh(gme_game_get_pre_last_round_count(g))) {
+          pll=gme_game_get_playlistlist(g,ME->gme,GME_GAME_LAST_ROUND);
+        } else {
+          pll=gme_game_get_playlistlist(g,ME->gme,GME_GAME_NEXT_ROUND);
+        }
+        mediaselector_append_pll(t->m,t,pll);
         const struct gme_subgame* sg=
           gme_game_get_subgame(g,t->gme,ME->sg_shuff[ME->round]);
         mediaselector_append_pll(t->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_PLAY));
@@ -222,6 +229,7 @@ void tiptoi_play_oid(tiptoi ME,uint32_t oid) {
           }
         }
       }
+      mediaselector_append_pll(ME->m,ME,gme_game_get_playlistlist(g,ME->gme,GME_GAME_BYE));
       break;
     }
   }
