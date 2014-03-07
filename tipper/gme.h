@@ -121,7 +121,7 @@ struct gme*  gme_load(const char* path);
 
 struct gme_script_table* gme_get_scripts(struct gme*);
 struct gme_media_table* gme_get_media(struct gme*);
-struct gme_registers* gme_get_registers(struct gme*);
+const struct gme_registers* gme_get_registers(struct gme*);
 struct gme_playlistlist* gme_get_welcome(struct gme*);
 struct gme_games_table* gme_get_games(struct gme*);
 

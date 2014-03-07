@@ -126,7 +126,7 @@ struct gme_games_table* gme_get_games(struct gme* gme) {
   return gme_get_ptr(gme,gme->u.header.games_off);
 }
 
-struct gme_registers* gme_get_registers(struct gme* gme) {
+const struct gme_registers* gme_get_registers(struct gme* gme) {
   return gme_get_ptr(gme,gme->u.header.regs_off);
 }
 

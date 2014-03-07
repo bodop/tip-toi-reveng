@@ -9,7 +9,7 @@
 
 static tiptoi t;
 
-static uint16_t get_operand(unsigned char**p,struct gme_registers* regs) {
+static uint16_t get_operand(unsigned char**p,const struct gme_registers* regs) {
   unsigned char r=*((*p)++);
   uint16_t m=*(uint16_t*) (*p);
   *p+=2;
@@ -19,7 +19,7 @@ static uint16_t get_operand(unsigned char**p,struct gme_registers* regs) {
 }
 
 static int gme_script_line_match(struct gme_script_line* line,
-                                 struct gme_registers* r)
+                                 const struct gme_registers* r)
 {
   int i=le16toh(line->conditions);
   unsigned char* p=line->raw;
@@ -140,6 +140,17 @@ void tipselector_init(tipselector ts,tiptoi t,onselectfunc onselect) {
   t->selectors=ts;
 }
 
+static void tiptoi_reset(tiptoi ME) {
+  const struct gme_registers* regs=gme_get_registers(ME->gme);
+  int i=ME->regs->len;
+  uint16_t* pdest=ME->regs->regs;
+  const uint16_t* psrc=regs->regs;
+  while (i--) {
+    *(pdest++)=le16toh(*(psrc++));
+  }
+  ME->current_game=NULL;
+}
+
 static tiptoi tiptoi_new(struct gme* gme) {
   tiptoi ME=malloc(sizeof(struct _tiptoi));
   ME->max_set_fd=-1;
@@ -148,10 +159,12 @@ static tiptoi tiptoi_new(struct gme* gme) {
   ME->gme=gme;
   ME->selectors=NULL;
   ME->m=mediaselector_new(ME);
-  ME->current_game=NULL;
   ME->subgames_len=0;
   ME->sg_shuff=NULL;
-
+  const struct gme_registers* regs=gme_get_registers(gme);
+  ME->regs=malloc((le16toh(regs->len)+1)*2);
+  ME->regs->len=le16toh(regs->len);
+  tiptoi_reset(ME);
   /* Play welcome */
   mediaselector_append_pll(ME->m,ME,gme_get_welcome(gme));
   return ME;
@@ -161,8 +174,6 @@ void tiptoi_play_oid(tiptoi ME,uint32_t oid) {
   fprintf(stdout,"Playing %d\n",oid);
   ME->m->kill_on_append=1;
   struct gme* gme=ME->gme;
-  /* Init regs */
-  struct gme_registers* regs=gme_get_registers(gme);
   struct gme_script_table* st=gme_get_scripts(gme);
 
   if (oid<st->first_oid || oid>st->last_oid) return;
@@ -171,9 +182,9 @@ void tiptoi_play_oid(tiptoi ME,uint32_t oid) {
     uint16_t i;
     for (i=0; i<s->lines; i++) {
       struct gme_script_line* sl=gme_script_get(gme,s,i);
-      if (gme_script_line_match(sl,regs)) {
+      if (gme_script_line_match(sl,ME->regs)) {
         gme_script_line_print(sl,stdout);
-        gme_script_line_execute(gme,sl,regs);
+        gme_script_line_execute(gme,sl,ME->regs);
         return;
       }
     }
@@ -215,8 +226,6 @@ void tiptoi_play_oid(tiptoi ME,uint32_t oid) {
         mediaselector_append_pll(t->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_PLAY));
         return;
       }
-      /* Game over */
-      ME->current_game=NULL;
       /* Evaluate score */
       {
         uint16_t i;
@@ -225,11 +234,13 @@ void tiptoi_play_oid(tiptoi ME,uint32_t oid) {
           if (ME->score>=sl->scores[i]) {
             mediaselector_append_pll(ME->m,ME,(const struct gme_playlistlist*)
                                      gme_get_ptr(ME->gme,sl->plls[i]));
-            return;
+            break;
           }
         }
       }
       mediaselector_append_pll(ME->m,ME,gme_game_get_playlistlist(g,ME->gme,GME_GAME_BYE));
+      /* Game over */
+      tiptoi_reset(ME);
       break;
     }
   }

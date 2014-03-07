@@ -172,7 +172,7 @@ int main(int argc,const char** argv) {
   if (*(d+8)) fprintf(out,"language  \"%s\";\n",d+8);
   /* Registers */
   {
-    struct gme_registers* regs=gme_get_registers(gme);
+    const struct gme_registers* regs=gme_get_registers(gme);
     if (regs->len) {
       fprintf(out, "register ");
       int i;

@@ -23,6 +23,7 @@ struct _tiptoi {
   uint16_t score;
   uint16_t subgames_len; /* Sizeof subgame_len */
   uint16_t* sg_shuff; /* Shuffled indexes */
+  struct gme_registers* regs;
 };
 
 void tiptoi_play_oid(tiptoi t,uint32_t oid);
