@@ -11,6 +11,7 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <string.h>
+#include <time.h>
 
 #define ME ((consoleselector) s)
 static int console_onselect(tipselector s,tiptoi t) {
@@ -354,9 +355,15 @@ static int httpselector_onselect(tipselector s,tiptoi t) {
         if (ch==CRLFCRLF[state-7]) {
           state++;
           if (state==11) {
-            static const char* RESP="HTTP/1.1 404 Not found\r\n\r\nContent-Length: 0\r\n";
+            time_t t;
+            time(&t);
+            char date[64];
+            char resp[1024];
+            strftime(date,sizeof(date),"%a, %d %b %Y %T %z",localtime(&t));
+            static const char* RESP="HTTP/1.1 404 Not found\r\nDate: %s\r\nContent-Length: 0\r\n\r\n";
+            int l=snprintf(resp,sizeof(resp),RESP,date);
             /* We assume we can always send the response without blocking */
-            if (strlen(RESP)!=write(ME->fd,RESP,strlen(RESP))) {
+            if (l!=write(ME->fd,resp,l)) {
               fprintf(stderr,"Write incomplete!\n");
             }
             state=0;
