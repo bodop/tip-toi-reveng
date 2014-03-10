@@ -20,7 +20,8 @@ struct _tiptoi {
   tipselector selectors;
   struct gme_game* current_game;
   uint16_t round;
-  uint16_t score;
+  uint16_t score; /* type 1 */
+  uint16_t match_i; /* type 40 */
   uint16_t subgames_len; /* Sizeof subgame_len */
   uint16_t* sg_shuff; /* Shuffled indexes */
   struct gme_registers* regs;

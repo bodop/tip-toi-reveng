@@ -90,27 +90,33 @@ static int gme_script_line_execute(struct gme* gme,struct gme_script_line* sl,
           gme_game_get_playlistlist(game,gme,GME_GAME_WELCOME);
         mediaselector_append_pll(t->m,t,pll);
 
-        /* Shuffle subgames */
         t->current_game=game;
         t->score=0;
         t->round=0;
-        switch (le16toh(game->type)) {
-        case 1:
-          if (le16toh(game->subgames_len)>t->subgames_len) {
-            t->subgames_len=le16toh(game->subgames_len);
-            t->sg_shuff=realloc(t->sg_shuff,sizeof(uint16_t)*t->subgames_len);
-          }
+        if (le16toh(game->subgames_len)>t->subgames_len) {
+          t->subgames_len=le16toh(game->subgames_len);
+          t->sg_shuff=realloc(t->sg_shuff,sizeof(uint16_t)*t->subgames_len);
+        }
+        /* Shuffle subgames */
+        {
           uint16_t sgi;
           for (sgi=0; sgi<t->subgames_len; sgi++) {
             uint16_t shi=rand() % (sgi+1);
             t->sg_shuff[sgi]=t->sg_shuff[shi];
             t->sg_shuff[shi]=sgi;
           }
-          struct gme_subgame* sg=gme_game_get_subgame(game,gme,t->sg_shuff[0]);
-          t->m->last_play_len=0;
-          mediaselector_append_pll
-            (t->m,t,gme_subgame_get_playlistlist(sg,gme,GME_SUBGAME_PLAY));
-          break;
+        }
+        switch (le16toh(game->type)) {
+        case 1:
+        case 40:
+          {
+            struct gme_subgame* sg=gme_game_get_subgame(game,gme,t->sg_shuff[0]);
+            t->m->last_play_len=0;
+            mediaselector_append_pll
+              (t->m,t,gme_subgame_get_playlistlist(sg,gme,GME_SUBGAME_PLAY));
+            t->match_i=0;
+            break;
+          }
         default:
           fprintf(stderr,"Game type %d not supported.\n",le16toh(game->type));
           t->current_game=NULL;
@@ -197,51 +203,91 @@ void tiptoi_play_oid(tiptoi ME,uint32_t oid) {
       mediaselector_repeat(ME->m,ME);
       return;
     }
-    const struct gme_subgame* sg=
-      gme_game_get_subgame(g,t->gme,ME->sg_shuff[ME->round]);
     switch (le16toh(ME->current_game->type)) {
     case 1:
-      if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_OK_OIDS),oid)) {
-        mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_OK_PLAY));
-        ME->score++;
-      } else if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_UNKNOWN_OIDS),oid)) {
-        mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_UNKNOWN_PLAY));
-      } else if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_FALSE_OIDS),oid)) {
-        mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_FALSE_PLAY));
-      } else {
-        mediaselector_append_pll(t->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_INVALID));
-        return;
-      }
-      ME->round++;
-      if (ME->round<le16toh(g->rounds)) {
-        const struct gme_playlistlist* pll;
-        if (ME->round>=le16toh(gme_game_get_pre_last_round_count(g))) {
-          pll=gme_game_get_playlistlist(g,ME->gme,GME_GAME_LAST_ROUND);
-        } else {
-          pll=gme_game_get_playlistlist(g,ME->gme,GME_GAME_NEXT_ROUND);
-        }
-        mediaselector_append_pll(t->m,t,pll);
+      {
         const struct gme_subgame* sg=
           gme_game_get_subgame(g,t->gme,ME->sg_shuff[ME->round]);
-        mediaselector_append_pll(t->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_PLAY));
-        return;
-      }
-      /* Evaluate score */
-      {
-        uint16_t i;
-        const struct gme_scorelist* sl=gme_game_get_scorelist(g,ME->gme);
-        for (i=0; i<10; i++) {
-          if (ME->score>=sl->scores[i]) {
-            mediaselector_append_pll(ME->m,ME,(const struct gme_playlistlist*)
-                                     gme_get_ptr(ME->gme,sl->plls[i]));
-            break;
+        if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_OK_OIDS),oid)) {
+          mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_OK_PLAY));
+          ME->score++;
+        } else if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_UNKNOWN_OIDS),oid)) {
+          mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_UNKNOWN_PLAY));
+        } else if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_FALSE_OIDS),oid)) {
+          mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_FALSE_PLAY));
+        } else {
+          mediaselector_append_pll(t->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_INVALID));
+          return;
+        }
+        ME->round++;
+        if (ME->round<le16toh(g->rounds)) {
+          const struct gme_playlistlist* pll;
+          if (ME->round>=le16toh(gme_game_get_pre_last_round_count(g))) {
+            pll=gme_game_get_playlistlist(g,ME->gme,GME_GAME_LAST_ROUND);
+          } else {
+            pll=gme_game_get_playlistlist(g,ME->gme,GME_GAME_NEXT_ROUND);
+          }
+          mediaselector_append_pll(t->m,t,pll);
+          const struct gme_subgame* sg=
+            gme_game_get_subgame(g,t->gme,ME->sg_shuff[ME->round]);
+          mediaselector_append_pll(t->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_PLAY));
+          return;
+        }
+        /* Evaluate score */
+        {
+          uint16_t i;
+          const struct gme_scorelist* sl=gme_game_get_scorelist(g,ME->gme);
+          for (i=0; i<10; i++) {
+            if (ME->score>=sl->scores[i]) {
+              mediaselector_append_pll(ME->m,ME,(const struct gme_playlistlist*)
+                                       gme_get_ptr(ME->gme,sl->plls[i]));
+              break;
+            }
           }
         }
+        mediaselector_append_pll(ME->m,ME,gme_game_get_playlistlist(g,ME->gme,GME_GAME_BYE));
+        /* Game over */
+        tiptoi_reset(ME);
+        break;
       }
-      mediaselector_append_pll(ME->m,ME,gme_game_get_playlistlist(g,ME->gme,GME_GAME_BYE));
-      /* Game over */
-      tiptoi_reset(ME);
-      break;
+    case 40:
+      {
+        const struct gme_subgame* sg=
+          gme_game_get_subgame(g,t->gme,ME->sg_shuff[ME->match_i]);
+        if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_OK_OIDS),oid)) {
+          mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_OK_PLAY));
+          if (ME->match_i<ME->round) {
+            ME->match_i++;
+            return;
+          }
+          const struct gme_playlistlist* pll=gme_game_get_playlistlist(g,ME->gme,GME_GAME_NEXT_LEVEL);
+          const struct gme_playlist* pl=gme_playlistlist_get(ME->gme,pll,ME->round);
+          ME->round++;
+          mediaselector_append_pl(ME->m,ME,pl);
+        } else if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_UNKNOWN_OIDS),oid)) {
+          mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_UNKNOWN_PLAY));
+        } else if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_FALSE_OIDS),oid)) {
+          mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_FALSE_PLAY));
+        } else {
+          mediaselector_append_pll(t->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_INVALID));
+          return;
+        }
+        ME->m->last_play_len=0;
+        if (ME->round<le16toh(g->rounds)) {
+          uint16_t i;
+          ME->match_i=0;
+          for (i=0; i<=ME->round; i++) {
+            const struct gme_subgame* sg=
+              gme_game_get_subgame(g,ME->gme,ME->sg_shuff[i]);
+            mediaselector_append_pll(ME->m,ME,gme_subgame_get_playlistlist(sg,ME->gme,GME_SUBGAME_PLAY));
+          }
+          return;
+        }
+        mediaselector_append_pll(ME->m,ME,gme_game_get_playlistlist(g,ME->gme,GME_GAME_BYE));
+        /* Game over */
+        tiptoi_reset(ME);
+        break;
+      }
     }
   }
 
