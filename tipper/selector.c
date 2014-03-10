@@ -244,7 +244,6 @@ void mediaselector_append(mediaselector ME,tiptoi t,uint16_t media_off)
 void mediaselector_append_pl(mediaselector ME,tiptoi t,const struct gme_playlist* pl)
 {
   int j;
-  ME->last_play_len=0;
   for (j=0; j<pl->len; j++) {
     mediaselector_append(ME,t,gme_playlist_get(pl,j));
   }
