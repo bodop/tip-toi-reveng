@@ -18,8 +18,8 @@
    sodipodi:docname="Welt der Musik 3.svg">
   <script
      xlink:href="play.js"
-     id="script3138"
-     type="text/ecmascript" />
+     type="text/ecmascript"
+     id="script3138" />
   <defs
      id="defs4" />
   <sodipodi:namedview
@@ -62,11 +62,11 @@
     <image
        sodipodi:absref="/home/bodop/tip-toi-reveng/maps/Welt der Musik 3.jpg"
        xlink:href="Welt der Musik 3.jpg"
-       y="377.47925"
-       x="28.0961"
-       id="image3063"
+       width="996.16998"
        height="605.67139"
-       width="996.16998" />
+       id="image3063"
+       x="28.0961"
+       y="377.47925" />
   </g>
   <g
      inkscape:groupmode="layer"
@@ -225,7 +225,7 @@
          sodipodi:role="line"
          id="tspan3091">3415</tspan></text>
     <text
-       onclick="play(3424)"
+       onclick="play(3423)"
        sodipodi:linespacing="125%"
        id="text3093"
        y="422.66171"
