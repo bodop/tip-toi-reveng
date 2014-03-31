@@ -22,13 +22,15 @@ NUM [0-9]+
 HEX "0x"[0-9a-fA-F]+
 %%
 
+"bonus_entry_score" { return BONUS_ENTRY_SCORE; }
+"bonus_rounds" { return BONUS_ROUNDS; }
 "bonusgame" { return BONUSGAME; }
 "bye" { return BYE; }
 "false" { return FALSE; }
 "format" { return FORMAT; }
 "game" { return GAME; }
-"ignored1" { return IGNORED1; }
-"ignored2" { return IGNORED2; }
+"next_bonus_round" { return NEXT_BONUS_ROUND; }
+"last_bonus_round" { return LAST_BONUS_ROUND; }
 "invalid" { return INVALID; }
 "last_round" { return LAST_ROUND; }
 "next_level" { return NEXT_LEVEL; }

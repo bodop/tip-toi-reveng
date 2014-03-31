@@ -526,6 +526,10 @@ int tipparse(const char* fn) {
 
  }
 %union {
+  struct {
+    uint16_t rounds;
+    uint16_t entry_score;
+  } bonus;
   uint32_t u32;
   uint16_t u16;
   char* name;
@@ -550,16 +554,17 @@ int tipparse(const char* fn) {
 %token WELCOME
 %token AND ADD OPERATOR_EQ OPERATOR_GE OPERATOR_NEQ
 %token NUM
-%token BONUSGAME BYE GAME IGNORED1 IGNORED2 ROUNDS TYPE PRE_LAST_ROUND_COUNT
+%token BONUS_ROUNDS BONUS_ENTRY_SCORE BONUSGAME BYE GAME NEXT_BONUS_ROUND
+       LAST_BONUS_ROUND ROUNDS TYPE PRE_LAST_ROUND_COUNT
 %token NEXT_LEVEL NEXT_ROUND LAST_ROUND SCORE SUBGAME PLAY INVALID OK FALSE
 %token OIDS REPEAT_OID U1 U2 U4 U6 U7 U8 UNKNOWN
 %token <name> IDENTIFIER STRING
-%type <arr> condition action command value sgu1 u1 u2
+%type <arr> condition action command value sgu1 u2
 %type <u16> operator media type rounds pre_last_round_count repeat_oid
 %type <u32> NUM scriptline subgame bonusgame
  /* some playlistlists */
-%type <u32> bye playlistlist welcome next_level next_round last_round ignored1
-            ignored2 play invalid sgu4 sgu6 sgu7 sgu8
+%type <u32> bye playlistlist welcome next_level next_round last_round
+            next_bonus_round last_bonus_round play invalid sgu4 sgu6 sgu7 sgu8
 %type <ol> oids oidlist oidlistmember
 %type <sl> conditions actions actionlist
 %type <pl> medias playlist
@@ -569,6 +574,7 @@ int tipparse(const char* fn) {
 %type <script> scriptlines
 %type <name> gameid
 %type <sgl> subgames bonusgames
+%type <bonus> bonus
 %destructor {
   free($$);
  } <name> <pll> <sl> <pl> <ol> <sgl>;
@@ -726,17 +732,17 @@ last_round: /* empty */ {
   $$=$2;
  }
 
-ignored1: /* empty */ {
+next_bonus_round: /* empty */ {
   $$=empty_list();
 }
-| IGNORED1 playlistlist {
+| NEXT_BONUS_ROUND playlistlist {
   $$=$2;
  }
 
-ignored2: /* empty */ {
+last_bonus_round: /* empty */ {
   $$=empty_list();
 }
-| IGNORED2 playlistlist {
+| LAST_BONUS_ROUND playlistlist {
   $$=$2;
  }
 
@@ -756,8 +762,8 @@ invalid: /* empty */ {
 
 games: /* empty */ | games game | game;
 
-game: GAME gameid '{' type rounds u1 pre_last_round_count repeat_oid u2
-    welcome next_level bye next_round last_round ignored1 ignored2
+game: GAME gameid '{' type rounds bonus pre_last_round_count repeat_oid u2
+    welcome next_level bye next_round last_round next_bonus_round last_bonus_round
     subgames bonusgames scores
 '}' {
   struct gme_game g;
@@ -767,7 +773,11 @@ game: GAME gameid '{' type rounds u1 pre_last_round_count repeat_oid u2
   g.c=$18->len;
   uint32_t g_off=sbuffer_append(&g,8);
   if ($4==6) {
-    sbuffer_append($6,8);
+    sbuffer_append(&$6,4);
+    /* Write unknown values */
+    $6.entry_score=0;
+    $6.rounds=0;
+    sbuffer_append(&$6,4);
   }
   sbuffer_append(&$7,2); /* pre_last_round_count */
   sbuffer_append(&$8,2); /* repeat oid */
@@ -1047,15 +1057,13 @@ pre_last_round_count: PRE_LAST_ROUND_COUNT NUM { $$=$2; };
 
 repeat_oid: REPEAT_OID NUM { $$=$2; };
 
-u1: /* EMPTY */ {
-  memset($$,0,4);
+bonus : /* EMPTY */ {
+  $$.rounds=0;
+  $$.entry_score=0;
 }
-| U1 '{' NUM ',' NUM ',' NUM ',' NUM '}' {
-  unsigned char* p=$$;
-  *(p++)=$3;
-  *(p++)=$5;
-  *(p++)=$7;
-  *(p++)=$9;
+| BONUS_ROUNDS NUM BONUS_ENTRY_SCORE NUM {
+  $$.rounds=$2;
+  $$.entry_score=$4;
   };
 
 u2: U2 '{' NUM ',' NUM ',' NUM '}' {

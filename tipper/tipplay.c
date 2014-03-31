@@ -108,10 +108,11 @@ static int gme_script_line_execute(struct gme* gme,struct gme_script_line* sl,
         }
         switch (le16toh(game->type)) {
         case 1:
+        case 6:
         case 40:
           {
+            t->bonus=0;
             struct gme_subgame* sg=gme_game_get_subgame(game,gme,t->sg_shuff[0]);
-            t->m->last_play_len=0;
             mediaselector_append_pll
               (t->m,t,gme_subgame_get_playlistlist(sg,gme,GME_SUBGAME_PLAY));
             t->match_i=0;
@@ -203,9 +204,11 @@ void tiptoi_play_oid(tiptoi ME,uint32_t oid) {
       mediaselector_repeat(ME->m,ME);
       return;
     }
-    switch (le16toh(ME->current_game->type)) {
+    uint16_t game_type=le16toh(ME->current_game->type);
+    switch (game_type) {
     case 1:
-      {
+    case 6:
+      if (!t->bonus) {
         const struct gme_subgame* sg=
           gme_game_get_subgame(g,t->gme,ME->sg_shuff[ME->round]);
         if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_OK_OIDS),oid)) {
@@ -221,6 +224,7 @@ void tiptoi_play_oid(tiptoi ME,uint32_t oid) {
         }
         ME->round++;
         if (ME->round<le16toh(g->rounds)) {
+          ME->m->last_play_len=0;
           const struct gme_playlistlist* pll;
           if (ME->round>=le16toh(gme_game_get_pre_last_round_count(g))) {
             pll=gme_game_get_playlistlist(g,ME->gme,GME_GAME_LAST_ROUND);
@@ -246,7 +250,78 @@ void tiptoi_play_oid(tiptoi ME,uint32_t oid) {
           }
         }
         mediaselector_append_pll(ME->m,ME,gme_game_get_playlistlist(g,ME->gme,GME_GAME_BYE));
-        /* Game over */
+        /* Game over? */
+        if (game_type==1 || ME->score<gme_game_get_bonus_entry_score(g)) {
+          tiptoi_reset(ME);
+          break;
+        } else {
+          ME->bonus=1;
+          ME->score=0;
+          ME->round=0;
+          if (le16toh(g->c)>ME->subgames_len) {
+            ME->subgames_len=le16toh(g->c);
+            ME->sg_shuff=realloc(t->sg_shuff,sizeof(uint16_t)*ME->subgames_len);
+          }
+          /* Shuffle subgames */
+          {
+            uint16_t sgi;
+            for (sgi=0; sgi<g->c; sgi++) {
+              uint16_t shi=rand() % (sgi+1);
+              t->sg_shuff[sgi]=t->sg_shuff[shi];
+              t->sg_shuff[shi]=sgi;
+            }
+          }
+          struct gme_subgame* sg=gme_game_get_bonusgame(g,gme,
+                                                        ME->sg_shuff[0]);
+          ME->m->last_play_len=0;
+          mediaselector_append_pll
+            (t->m,t,gme_subgame_get_playlistlist(sg,gme,GME_SUBGAME_PLAY));
+          return;
+        }
+      } else /* if (ME->bonus) */ {
+        const struct gme_subgame* sg=
+          gme_game_get_bonusgame(g,t->gme,ME->sg_shuff[ME->round]);
+        if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_OK_OIDS),oid)) {
+          mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_OK_PLAY));
+          ME->score++;
+        } else if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_UNKNOWN_OIDS),oid)) {
+          mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_UNKNOWN_PLAY));
+          return;
+        } else if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_FALSE_OIDS),oid)) {
+          mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_FALSE_PLAY));
+        } else {
+          mediaselector_append_pll(t->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_INVALID));
+          return;
+        }
+        ME->round++;
+        if (ME->round<gme_game_get_bonus_rounds(g)) {
+          ME->m->last_play_len=0;
+          const struct gme_playlistlist* pll;
+          if (ME->round+1==gme_game_get_bonus_rounds(g)) {
+            pll=gme_game_get_playlistlist(g,ME->gme,GME_GAME_LAST_BONUS_ROUND);
+          } else {
+            pll=gme_game_get_playlistlist(g,ME->gme,GME_GAME_NEXT_BONUS_ROUND);
+          }
+          mediaselector_append_pll(t->m,t,pll);
+          const struct gme_subgame* sg=
+            gme_game_get_bonusgame(g,t->gme,ME->sg_shuff[ME->round]);
+          mediaselector_append_pll(t->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_PLAY));
+          return;
+        }
+        /* Evaluate score */
+        {
+          uint16_t i=0;
+          const struct gme_scorelist* sl=gme_game_get_scorelist(g,ME->gme);
+          while (i<10 && sl->scores[i]) i++;
+          for (i++; i<10; i++) {
+            if (ME->score>=sl->scores[i]) {
+              mediaselector_append_pll(ME->m,ME,(const struct gme_playlistlist*)
+                                       gme_get_ptr(ME->gme,sl->plls[i]));
+              break;
+            }
+          }
+        }
+        mediaselector_append_pll(ME->m,ME,gme_game_get_playlistlist(g,ME->gme,GME_GAME_BYE));
         tiptoi_reset(ME);
         break;
       }

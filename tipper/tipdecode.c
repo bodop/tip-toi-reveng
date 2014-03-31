@@ -4,6 +4,7 @@
 #include <gme.h>
 #include <string.h>
 #include <sys/stat.h>
+#include <assert.h>
 
 static int usage() {
   fprintf(stderr,"usage: tipdecode [-b basename] <gmefile>\n"
@@ -122,6 +123,12 @@ static void print_subgame(FILE* out,const char* prefix,
   fprintf(out,"  }\n");
 }
 
+static uint16_t get_uint16(const unsigned char* p) {
+  uint16_t i;
+  memcpy(&i,p,2);
+  return le16toh(i);
+}
+
 int main(int argc,const char** argv) {
 
   const char* basename=NULL;
@@ -208,13 +215,10 @@ int main(int argc,const char** argv) {
       }
       fprintf(out,"  rounds %d\n",game->rounds);
       if (game->type==6) {
-        fprintf(out,"  u1 {");
-        uint16_t n=0;
-        for (n=0; n<4; n++) {
-          if (n) fputc(',',out);
-          fprintf(out,"%d",game->raw[n]);
-        };
-        fprintf(out,"}\n");
+        fprintf(out,"  bonus_rounds %d\n",get_uint16(game->raw));
+        fprintf(out,"  bonus_entry_score %d\n",get_uint16(game->raw+2));
+        assert(!get_uint16(game->raw+4)); /* Yet unknown values */
+        assert(!get_uint16(game->raw+6));
       }
       fprintf(out,"  pre_last_round_count %d\n",gme_game_get_pre_last_round_count(game));
       fprintf(out,"  repeat_oid %d\n",gme_game_get_repeat_oid(game));
@@ -235,8 +239,8 @@ int main(int argc,const char** argv) {
           "  bye ",
           "  next_round ",
           "  last_round ",
-          "  ignored1 ",
-          "  ignored2 "
+          "  next_bonus_round ",
+          "  last_bonus_round "
         };
         for (pi=0; pi<((game->type==6) ? 7 : 5); pi++) {
           print_playlistlist(out,pllnames[pi],"  ",
