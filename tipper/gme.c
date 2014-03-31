@@ -13,13 +13,13 @@ void* gme_get_ptr(struct gme* gme,uint32_t off) {
   return gme->u.raw+off;
 }
 
-static inline uint16_t get_uint16(const unsigned char* p) {
+static uint16_t get_uint16(const unsigned char* p) {
   uint16_t i;
   memcpy(&i,p,2);
   return le16toh(i);
 }
 
-static inline uint32_t get_uint32(const unsigned char* p) {
+static uint32_t get_uint32(const unsigned char* p) {
   uint32_t i;
   memcpy(&i,p,4);
   return le32toh(i);
@@ -343,6 +343,16 @@ struct gme_game*
 gme_games_get(struct gme_games_table* gt,struct gme* gme,uint16_t i) {
   assert(i<gt->len);
   return gme_get_ptr(gme,gt->game_offs[i]);
+}
+
+uint16_t gme_game_get_bonus_rounds(const struct gme_game* g) {
+  assert(g->type==6);
+  return get_uint16(g->raw);
+}
+
+uint16_t gme_game_get_bonus_entry_score(const struct gme_game* g) {
+  assert(g->type==6);
+  return get_uint16(g->raw+2);
 }
 
 const unsigned char* gme_game_get_last_round_p(const struct gme_game* g) {

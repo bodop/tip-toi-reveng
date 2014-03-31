@@ -8,6 +8,8 @@
 #define GME_GAME_BYE 2
 #define GME_GAME_NEXT_ROUND 3
 #define GME_GAME_LAST_ROUND 4
+#define GME_GAME_NEXT_BONUS_ROUND 5
+#define GME_GAME_LAST_BONUS_ROUND 6
 #define GME_SUBGAME_PLAY 0
 #define GME_SUBGAME_INVALID 3
 #define GME_SUBGAME_U4 4
@@ -146,6 +148,8 @@ void* gme_get_ptr(struct gme* gme,uint32_t off);
 struct gme_game* gme_games_get(struct gme_games_table*,struct gme*,uint16_t i);
 uint16_t gme_game_get_pre_last_round_count(const struct gme_game* g);
 uint16_t gme_game_get_repeat_oid(const struct gme_game* g);
+uint16_t gme_game_get_bonus_rounds(const struct gme_game* g);
+uint16_t gme_game_get_bonus_entry_score(const struct gme_game* g);
 /** Unknown array of length 3 */
 uint16_t gme_game_get_u2(const struct gme_game* g,uint16_t i);
 struct gme_playlistlist* gme_game_get_playlistlist(const struct gme_game* g,struct gme*,uint16_t i);
