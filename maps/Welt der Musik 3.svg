@@ -18,8 +18,8 @@
    sodipodi:docname="Welt der Musik 3.svg">
   <script
      xlink:href="play.js"
-     type="text/ecmascript"
-     id="script3138" />
+     id="script3138"
+     type="text/ecmascript" />
   <defs
      id="defs4" />
   <sodipodi:namedview
@@ -62,11 +62,11 @@
     <image
        sodipodi:absref="/home/bodop/tip-toi-reveng/maps/Welt der Musik 3.jpg"
        xlink:href="Welt der Musik 3.jpg"
-       width="996.16998"
-       height="605.67139"
-       id="image3063"
+       y="377.47925"
        x="28.0961"
-       y="377.47925" />
+       id="image3063"
+       height="605.67139"
+       width="996.16998" />
   </g>
   <g
      inkscape:groupmode="layer"
@@ -564,5 +564,17 @@
        inkscape:transform-center-y="68.680193"><tspan
          sodipodi:role="line"
          id="tspan3258">3429</tspan></text>
+    <text
+       xml:space="preserve"
+       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       x="170.77214"
+       y="92.015648"
+       id="text3299"
+       sodipodi:linespacing="125%"
+       onclick="play(3395)"
+       inkscape:transform-center-x="-61.812174"
+       inkscape:transform-center-y="68.680193"><tspan
+         sodipodi:role="line"
+         id="tspan3303">3395</tspan></text>
   </g>
 </svg>

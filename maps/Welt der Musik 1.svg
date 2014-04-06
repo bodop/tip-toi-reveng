@@ -14,9 +14,12 @@
    height="744.09448"
    id="svg2"
    version="1.1"
-   inkscape:version="0.48.4 r9939"
+   inkscape:version="0.48.3.1 r9886"
    sodipodi:docname="Welt der Musik 1.svg">
-  <script type="text/ecmascript" xlink:href="play.js"/>
+  <script
+     xlink:href="play.js"
+     id="script2986"
+     type="text/ecmascript" />
   <defs
      id="defs4" />
   <sodipodi:namedview
@@ -30,12 +33,12 @@
      inkscape:cx="307.7829"
      inkscape:cy="371.79427"
      inkscape:document-units="px"
-     inkscape:current-layer="layer1"
+     inkscape:current-layer="layer2"
      showgrid="false"
-     inkscape:window-width="1280"
-     inkscape:window-height="923"
+     inkscape:window-width="1400"
+     inkscape:window-height="1000"
      inkscape:window-x="0"
-     inkscape:window-y="24"
+     inkscape:window-y="0"
      inkscape:window-maximized="1" />
   <metadata
      id="metadata7">
@@ -57,13 +60,13 @@
      style="display:inline"
      sodipodi:insensitive="true">
     <image
-       sodipodi:absref="/home/bodop/bodo/svn/tipper/maps/Welt der Musik 1.jpg"
+       sodipodi:absref="/home/bodop/tip-toi-reveng/maps/Welt der Musik 1.jpg"
        xlink:href="Welt der Musik 1.jpg"
-       width="996.16998"
-       height="605.67139"
-       id="image3063"
+       y="377.47925"
        x="28.0961"
-       y="377.47925" />
+       id="image3063"
+       height="605.67139"
+       width="996.16998" />
   </g>
   <g
      inkscape:groupmode="layer"
@@ -75,7 +78,7 @@
        x="769.23407"
        y="649.37152"
        id="text3067"
-       onclick='play(3301)'
+       onclick="play(3301)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3069"
@@ -87,7 +90,7 @@
        x="805.66602"
        y="622.30774"
        id="text3839"
-       onclick='play(3302)'
+       onclick="play(3302)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3841"
@@ -99,7 +102,7 @@
        x="837.93427"
        y="647.28967"
        id="text3843"
-       onclick='play(3303)'
+       onclick="play(3303)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3845"
@@ -111,7 +114,7 @@
        x="875.4071"
        y="624.38959"
        id="text3847"
-       onclick='play(3304)'
+       onclick="play(3304)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3849"
@@ -134,7 +137,7 @@
        x="956.59827"
        y="621.26685"
        id="text3855"
-       onclick='play(3306)'
+       onclick="play(3306)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3857"
@@ -146,7 +149,7 @@
        x="689.08386"
        y="129.95631"
        id="text3859"
-       onclick='play(3319)'
+       onclick="play(3319)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3861"
@@ -158,7 +161,7 @@
        x="745.29309"
        y="264.23398"
        id="text3863"
-       onclick='play(3323)'
+       onclick="play(3323)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3865"
@@ -170,7 +173,7 @@
        x="598.52448"
        y="325.6478"
        id="text3867"
-       onclick='play(3322)'
+       onclick="play(3322)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3869"
@@ -182,7 +185,7 @@
        x="78.068413"
        y="308.99319"
        id="text3871"
-       onclick='play(3313)'
+       onclick="play(3313)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3873"
@@ -203,7 +206,7 @@
          id="text3875"
          y="302.74774"
          x="275.84171"
-         onclick='play(3329)'
+         onclick="play(3329)"
          style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr-tb;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
          xml:space="preserve"><tspan
            y="302.74774"
@@ -217,7 +220,7 @@
        x="776.52045"
        y="442.22995"
        id="text3879"
-       onclick='play(3332)'
+       onclick="play(3332)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3881"
@@ -241,7 +244,7 @@
        x="310.19183"
        y="530.70752"
        id="text3887"
-       onclick='play(3339)'
+       onclick="play(3339)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3889"
@@ -253,7 +256,7 @@
        x="162.38229"
        y="177.83827"
        id="text3891"
-       onclick='play(3309)'
+       onclick="play(3309)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3893"
@@ -265,7 +268,7 @@
        x="106.17304"
        y="429.73901"
        id="text3895"
-       onclick='play(3317)'
+       onclick="play(3317)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3897"
@@ -277,7 +280,7 @@
        x="271.67807"
        y="423.49353"
        id="text3899"
-       onclick='play(3328)'
+       onclick="play(3328)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3901"
@@ -289,7 +292,7 @@
        x="208.18243"
        y="549.44391"
        id="text3903"
-       onclick='play(3327)'
+       onclick="play(3327)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3905"
@@ -301,7 +304,7 @@
        x="286.25085"
        y="615.02136"
        id="text3907"
-       onclick='play(3326)'
+       onclick="play(3326)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3909"
@@ -313,7 +316,7 @@
        x="701.57477"
        y="376.6525"
        id="text3911"
-       onclick='play(3336)'
+       onclick="play(3336)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3913"
@@ -325,7 +328,7 @@
        x="940.98456"
        y="155.97913"
        id="text3915"
-       onclick='play(3314)'
+       onclick="play(3314)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3917"
@@ -337,7 +340,7 @@
        x="838.97522"
        y="228.84297"
        id="text3919"
-       onclick='play(3321)'
+       onclick="play(3321)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3921"
@@ -349,7 +352,7 @@
        x="1001.3575"
        y="419.3299"
        id="text3923"
-       onclick='play(3333)'
+       onclick="play(3333)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3925"
@@ -361,7 +364,7 @@
        x="421.56943"
        y="244.45665"
        id="text3927"
-       onclick='play(3335)'
+       onclick="play(3335)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3929"
@@ -373,7 +376,7 @@
        x="471.5332"
        y="128.91541"
        id="text3931"
-       onclick='play(3316)'
+       onclick="play(3316)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3933"
@@ -385,7 +388,7 @@
        x="106.17304"
        y="576.50763"
        id="text3935"
-       onclick='play(3338)'
+       onclick="play(3338)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3937"
@@ -397,7 +400,7 @@
        x="411.16031"
        y="566.09851"
        id="text3939"
-       onclick='play(3325)'
+       onclick="play(3325)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3941"
@@ -409,7 +412,7 @@
        x="635.99731"
        y="455.76181"
        id="text3943"
-       onclick='play(3324)'
+       onclick="play(3324)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3945"
@@ -421,7 +424,7 @@
        x="395.54663"
        y="453.67999"
        id="text3947"
-       onclick='play(3330)'
+       onclick="play(3330)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3949"
@@ -433,7 +436,7 @@
        x="754.66132"
        y="500.52103"
        id="text3951"
-       onclick='play(3310)'
+       onclick="play(3310)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3953"
@@ -445,7 +448,7 @@
        x="828.56604"
        y="505.72559"
        id="text3955"
-       onclick='play(3310)'
+       onclick="play(3310)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3957"
@@ -457,7 +460,7 @@
        x="810.87054"
        y="361.03882"
        id="text3959"
-       onclick='play(3310)'
+       onclick="play(3310)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3961"
@@ -469,7 +472,7 @@
        x="909.7572"
        y="580.67126"
        id="text3963"
-       onclick='play(3338)'
+       onclick="play(3338)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3965"
@@ -481,7 +484,7 @@
        x="981.58014"
        y="524.46204"
        id="text3967"
-       onclick='play(3331)'
+       onclick="play(3331)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3969"
@@ -493,7 +496,7 @@
        x="841.05701"
        y="159.10185"
        id="text3971"
-       onclick='play(3320)'
+       onclick="play(3320)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3973"
@@ -505,7 +508,7 @@
        x="608.93359"
        y="187.20648"
        id="text3975"
-       onclick='play(3315)'
+       onclick="play(3315)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3977"
@@ -517,7 +520,7 @@
        x="471.5332"
        y="322.52505"
        id="text3979"
-       onclick='play(3335)'
+       onclick="play(3335)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3981"
@@ -529,7 +532,7 @@
        x="495.47418"
        y="274.6431"
        id="text3983"
-       onclick='play(3310)'
+       onclick="play(3310)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3985"
@@ -541,7 +544,7 @@
        x="121.78672"
        y="257.98849"
        id="text3987"
-       onclick='play(3334)'
+       onclick="play(3334)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3989"
@@ -553,7 +556,7 @@
        x="179.0369"
        y="303.78864"
        id="text3991"
-       onclick='play(3310)'
+       onclick="play(3310)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3993"
@@ -565,7 +568,7 @@
        x="442.38766"
        y="636.88055"
        id="text3995"
-       onclick='play(3326)'
+       onclick="play(3326)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan3997"
@@ -577,7 +580,7 @@
        x="935.78003"
        y="338.13873"
        id="text3999"
-       onclick='play(3310)'
+       onclick="play(3310)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan4001"
@@ -589,7 +592,7 @@
        x="994.07111"
        y="257.98849"
        id="text4003"
-       onclick='play(3310)'
+       onclick="play(3310)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan4005"
@@ -601,7 +604,7 @@
        x="480.9014"
        y="428.69809"
        id="text4007"
-       onclick='play(3310)'
+       onclick="play(3310)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan4009"
@@ -613,7 +616,7 @@
        x="588.11536"
        y="435.9845"
        id="text4011"
-       onclick='play(3337)'
+       onclick="play(3337)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan4013"
@@ -625,7 +628,7 @@
        x="365.36017"
        y="582.75311"
        id="text4015"
-       onclick='play(3327)'
+       onclick="play(3327)"
        sodipodi:linespacing="125%"><tspan
          sodipodi:role="line"
          id="tspan4017"
@@ -638,5 +641,15 @@
        height="607.51544"
        x="29.14554"
        y="68.542496" />
+    <text
+       sodipodi:linespacing="125%"
+       onclick="play(3308)"
+       id="text3089"
+       y="104.76303"
+       x="165.86206"
+       style="font-size:14px;font-style:normal;font-variant:normal;font-weight:normal;font-stretch:normal;text-align:start;line-height:125%;letter-spacing:0px;word-spacing:0px;writing-mode:lr;text-anchor:start;fill:#000000;fill-opacity:1;stroke:none;font-family:Sans;-inkscape-font-specification:Sans"
+       xml:space="preserve"><tspan
+         sodipodi:role="line"
+         id="tspan3093">3308</tspan></text>
   </g>
 </svg>
