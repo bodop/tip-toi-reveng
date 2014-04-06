@@ -22,10 +22,11 @@ NUM [0-9]+
 HEX "0x"[0-9a-fA-F]+
 %%
 
-"bonus_entry_score" { return BONUS_ENTRY_SCORE; }
-"bonus_rounds" { return BONUS_ROUNDS; }
+"attempts" { return ATTEMPTS; }
+"bonus" { return BONUS; }
 "bonusgame" { return BONUSGAME; }
 "bye" { return BYE; }
+"entry_score" { return ENTRY_SCORE; }
 "false" { return FALSE; }
 "format" { return FORMAT; }
 "game" { return GAME; }
@@ -52,7 +53,9 @@ HEX "0x"[0-9a-fA-F]+
 "language" { return LANGUAGE; }
 "unknown" { return UNKNOWN; }
 "welcome" {  return WELCOME; }
+"u0" { return U0; }
 "u1" { return U1; }
+"u3" { return U3; }
 "u4" { return U4; }
 "u2" { return U2; }
 "u6" { return U6; }

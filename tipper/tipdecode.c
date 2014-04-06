@@ -92,13 +92,19 @@ static void print_subgame(FILE* out,const char* prefix,
                           struct gme* gme)
 {
   fprintf(out,"  %s {\n",prefix);
-  fprintf(out,"    u1 {");
-  uint16_t ui;
-  for (ui=0; ui<20; ui++) {
-    if (ui) fputc(',',out);
-    fprintf(out,"%d",subgame->raw[ui]);
-  }
-  fprintf(out,"}\n");
+  if (subgame->u0)
+    fprintf(out,"    u0 %d\n",le16toh(subgame->u0));
+  assert(!subgame->u1);
+  assert(!subgame->u2);
+  if (subgame->u3)
+    fprintf(out,"    u3 %d\n",le16toh(subgame->u3));
+  if (le16toh(subgame->attempts)!=1)
+    fprintf(out,"    attempts %d\n",le16toh(subgame->attempts));
+  assert(!subgame->u5);
+  assert(!subgame->u6);
+  assert(!subgame->u7);
+  assert(!subgame->u8);
+  assert(!subgame->u9);
   print_playlistlist(out,"    play ","    ",
                      gme_subgame_get_playlistlist(subgame,gme,0),gme);
   print_playlistlist(out,"    invalid ","    ",
@@ -215,10 +221,14 @@ int main(int argc,const char** argv) {
       }
       fprintf(out,"  rounds %d\n",game->rounds);
       if (game->type==6) {
-        fprintf(out,"  bonus_rounds %d\n",get_uint16(game->raw));
-        fprintf(out,"  bonus_entry_score %d\n",get_uint16(game->raw+2));
-        assert(!get_uint16(game->raw+4)); /* Yet unknown values */
-        assert(!get_uint16(game->raw+6));
+        fprintf(out,"  bonus {\n");
+        fprintf(out,"    rounds %d\n",get_uint16(game->raw));
+        fprintf(out,"    entry_score %d\n",get_uint16(game->raw+2));
+        uint16_t u=get_uint16(game->raw+4);
+        if (u) fprintf(out,"    u1 %d\n",u);
+        u=get_uint16(game->raw+6);
+        if (u) fprintf(out,"    u2 %d\n",u);
+        fputs("  }\n",out);
       }
       fprintf(out,"  pre_last_round_count %d\n",gme_game_get_pre_last_round_count(game));
       fprintf(out,"  repeat_oid %d\n",gme_game_get_repeat_oid(game));

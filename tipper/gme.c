@@ -423,7 +423,7 @@ const struct gme_oidlist*
 gme_subgame_get_oids(const struct gme_subgame* sb,uint16_t i)
 {
   assert(i<3);
-  const unsigned char* p=sb->raw+20;
+  const unsigned char* p=sb->raw;
   while (i--) p+=get_uint16(p)*2+2;
   return (const struct gme_oidlist*) p;
 }
@@ -433,7 +433,7 @@ gme_subgame_get_playlistlist(const struct gme_subgame* sb,
                              struct gme* gme,uint16_t i)
 {
   assert(i<9);
-  const unsigned char* p=sb->raw+20;
+  const unsigned char* p=sb->raw;
   /* Skip oidlists */
   p+=get_uint16(p)*2+2;
   p+=get_uint16(p)*2+2;

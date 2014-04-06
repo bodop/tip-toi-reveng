@@ -529,6 +529,8 @@ int tipparse(const char* fn) {
   struct {
     uint16_t rounds;
     uint16_t entry_score;
+    uint16_t u1;
+    uint16_t u2;
   } bonus;
   uint32_t u32;
   uint16_t u16;
@@ -554,13 +556,14 @@ int tipparse(const char* fn) {
 %token WELCOME
 %token AND ADD OPERATOR_EQ OPERATOR_GE OPERATOR_NEQ
 %token NUM
-%token BONUS_ROUNDS BONUS_ENTRY_SCORE BONUSGAME BYE GAME NEXT_BONUS_ROUND
+%token ATTEMPTS BONUS ENTRY_SCORE BONUSGAME BYE GAME NEXT_BONUS_ROUND
        LAST_BONUS_ROUND ROUNDS TYPE PRE_LAST_ROUND_COUNT
 %token NEXT_LEVEL NEXT_ROUND LAST_ROUND SCORE SUBGAME PLAY INVALID OK FALSE
-%token OIDS REPEAT_OID U1 U2 U4 U6 U7 U8 UNKNOWN
+%token OIDS REPEAT_OID U0 U1 U2 U3 U4 U6 U7 U8 UNKNOWN
 %token <name> IDENTIFIER STRING
-%type <arr> condition action command value sgu1 u2
-%type <u16> operator media type rounds pre_last_round_count repeat_oid
+%type <arr> condition action command value u2
+%type <u16> bonus_u2 operator media type rounds pre_last_round_count repeat_oid
+            sg_u0 sg_u3 sg_attempts
 %type <u32> NUM scriptline subgame bonusgame
  /* some playlistlists */
 %type <u32> bye playlistlist welcome next_level next_round last_round
@@ -773,11 +776,7 @@ game: GAME gameid '{' type rounds bonus pre_last_round_count repeat_oid u2
   g.c=$18->len;
   uint32_t g_off=sbuffer_append(&g,8);
   if ($4==6) {
-    sbuffer_append(&$6,4);
-    /* Write unknown values */
-    $6.entry_score=0;
-    $6.rounds=0;
-    sbuffer_append(&$6,4);
+    sbuffer_append(&$6,8);
   }
   sbuffer_append(&$7,2); /* pre_last_round_count */
   sbuffer_append(&$8,2); /* repeat oid */
@@ -871,8 +870,18 @@ subgames: /* empty */ {
   $$->offs[0]=$1;
   };
 
-subgame: SUBGAME '{' sgu1 play invalid sgok sgunknown sgfalse sgu4 sgu6 sgu7 sgu8 '}' {
-  $$=sbuffer_append($3,20);
+subgame: SUBGAME '{' sg_attempts play invalid sgok sgunknown sgfalse sgu4 sgu6 sgu7 sgu8 '}' {
+  uint16_t zero=0;
+  $$=sbuffer_append(&zero,2); // u0
+  sbuffer_append(&zero,2); // u1
+  sbuffer_append(&zero,2); // u2
+  sbuffer_append(&zero,2); // u3
+  sbuffer_append(&$3,2); // attempts
+  sbuffer_append(&zero,2); // u5
+  sbuffer_append(&zero,2); // u6
+  sbuffer_append(&zero,2); // u7
+  sbuffer_append(&zero,2); // u8
+  sbuffer_append(&zero,2); // u9
   sbuffer_append($6.oidlist,2+2*(le16toh($6.oidlist->len))); /* OK oids */
   free($6.oidlist);
   sbuffer_append($7.oidlist,2+2*(le16toh($7.oidlist->len))); /* unknown oids */
@@ -906,48 +915,55 @@ bonusgames: /* empty */ {
   $$->offs[0]=$1;
   };
 
-bonusgame: BONUSGAME '{' sgu1 play invalid sgok sgunknown sgfalse sgu4 sgu6 sgu7 sgu8 '}'
+bonusgame: BONUSGAME '{' sg_u0 sg_u3 sg_attempts play invalid sgok sgunknown sgfalse sgu4 sgu6 sgu7 sgu8 '}'
  {
-  $$=sbuffer_append($3,20);
-  sbuffer_append($6.oidlist,2+2*(le16toh($6.oidlist->len))); /* OK oids */
-  free($6.oidlist);
-  sbuffer_append($7.oidlist,2+2*(le16toh($7.oidlist->len))); /* unknown oids */
-  free($7.oidlist);
-  sbuffer_append($8.oidlist,2+2*(le16toh($8.oidlist->len))); /* false oids */
+  uint16_t zero=0;
+  $$=sbuffer_append(&$3,2); // u0
+  sbuffer_append(&zero,2); // u1
+  sbuffer_append(&zero,2); // u2
+  sbuffer_append(&$4,2); // u3
+  sbuffer_append(&$5,2); // attempts
+  sbuffer_append(&zero,2); // u5
+  sbuffer_append(&zero,2); // u6
+  sbuffer_append(&zero,2); // u7
+  sbuffer_append(&zero,2); // u8
+  sbuffer_append(&zero,2); // u9
+  sbuffer_append($8.oidlist,2+2*(le16toh($8.oidlist->len))); /* OK oids */
   free($8.oidlist);
-  sbuffer_append(&$4,4);
-  sbuffer_append(&$6.playlist,4);
-  sbuffer_append(&$7.playlist,4);
-  sbuffer_append(&$5,4);
-  sbuffer_append(&$9,4);
+  sbuffer_append($9.oidlist,2+2*(le16toh($9.oidlist->len))); /* unknown oids */
+  free($9.oidlist);
+  sbuffer_append($10.oidlist,2+2*(le16toh($10.oidlist->len))); /* false oids */
+  free($10.oidlist);
+  sbuffer_append(&$6,4);
   sbuffer_append(&$8.playlist,4);
-  sbuffer_append(&$10,4);
+  sbuffer_append(&$9.playlist,4);
+  sbuffer_append(&$7,4);
   sbuffer_append(&$11,4);
+  sbuffer_append(&$10.playlist,4);
   sbuffer_append(&$12,4);
+  sbuffer_append(&$13,4);
+  sbuffer_append(&$14,4);
  };
 
-sgu1: U1 '{' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM ',' NUM '}' {
-  unsigned char* p=$$;
-  *(p++)=$3;
-  *(p++)=$5;
-  *(p++)=$7;
-  *(p++)=$9;
-  *(p++)=$11;
-  *(p++)=$13;
-  *(p++)=$15;
-  *(p++)=$17;
-  *(p++)=$19;
-  *(p++)=$21;
-  *(p++)=$23;
-  *(p++)=$25;
-  *(p++)=$27;
-  *(p++)=$29;
-  *(p++)=$31;
-  *(p++)=$33;
-  *(p++)=$35;
-  *(p++)=$37;
-  *(p++)=$39;
-  *(p++)=$41;
+sg_u0: /* EMPTY */ {
+  $$=0;
+} 
+| U0 NUM {
+  $$=htole16($2);
+ }
+
+sg_u3: /* EMPTY */ {
+  $$=0;
+} 
+| U3 NUM {
+  $$=htole16($2);
+ }
+
+sg_attempts: /* EMPTY */ {
+  $$=1;
+} 
+| ATTEMPTS NUM {
+  $$=htole16($2);
  }
 
 sgok: /* empty */ {
@@ -1060,11 +1076,21 @@ repeat_oid: REPEAT_OID NUM { $$=$2; };
 bonus : /* EMPTY */ {
   $$.rounds=0;
   $$.entry_score=0;
+  $$.u1=0;
+  $$.u2=0;
 }
-| BONUS_ROUNDS NUM BONUS_ENTRY_SCORE NUM {
-  $$.rounds=$2;
-  $$.entry_score=$4;
-  };
+| BONUS '{' ROUNDS NUM ENTRY_SCORE NUM bonus_u2 '}' {
+  $$.rounds=htole16($4);
+  $$.entry_score=htole16($6);
+  $$.u1=htole16(0);
+  $$.u2=htole16($7);
+}
+
+bonus_u2 : /* EMPTY */ {
+  $$=0;
+} | U2 NUM {
+  $$=$2;
+ }
 
 u2: U2 '{' NUM ',' NUM ',' NUM '}' {
   unsigned char* p=$$;

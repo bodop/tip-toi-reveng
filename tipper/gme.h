@@ -18,10 +18,12 @@
 #define GME_SUBGAME_U8 8
 #define GME_SUBGAME_OK_OIDS 0
 #define GME_SUBGAME_OK_PLAY 1
+#define GME_SUBGAME_OK_SECOND 6
 #define GME_SUBGAME_UNKNOWN_OIDS 1
 #define GME_SUBGAME_UNKNOWN_PLAY 2
 #define GME_SUBGAME_FALSE_OIDS 2
 #define GME_SUBGAME_FALSE_PLAY 5
+#define GME_SUBGAME_FALSE_SECOND 7
 
 #pragma pack(push,1)
 struct gme_header {
@@ -102,6 +104,7 @@ struct gme_scorelist {
 };
 
 struct gme_subgame {
+  uint16_t u0,u1,u2,u3,attempts,u5,u6,u7,u8,u9;
   unsigned char raw[0];
 };
 

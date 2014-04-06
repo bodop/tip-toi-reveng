@@ -116,6 +116,7 @@ static int gme_script_line_execute(struct gme* gme,struct gme_script_line* sl,
             mediaselector_append_pll
               (t->m,t,gme_subgame_get_playlistlist(sg,gme,GME_SUBGAME_PLAY));
             t->match_i=0;
+            t->subgame_attempt=0;
             break;
           }
         default:
@@ -212,17 +213,21 @@ void tiptoi_play_oid(tiptoi ME,uint32_t oid) {
         const struct gme_subgame* sg=
           gme_game_get_subgame(g,t->gme,ME->sg_shuff[ME->round]);
         if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_OK_OIDS),oid)) {
-          mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_OK_PLAY));
+          mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,t->subgame_attempt ? GME_SUBGAME_OK_SECOND : GME_SUBGAME_OK_PLAY));
           ME->score++;
         } else if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_UNKNOWN_OIDS),oid)) {
           mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_UNKNOWN_PLAY));
         } else if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_FALSE_OIDS),oid)) {
-          mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_FALSE_PLAY));
+          mediaselector_append_pll(ME->m,t,gme_subgame_get_playlistlist(sg,t->gme,ME->subgame_attempt ? GME_SUBGAME_FALSE_SECOND : GME_SUBGAME_FALSE_PLAY));
+          ME->subgame_attempt++;
+          /* Try again? */
+          if (ME->subgame_attempt<le16toh(sg->attempts)) return;
         } else {
           mediaselector_append_pll(t->m,t,gme_subgame_get_playlistlist(sg,t->gme,GME_SUBGAME_INVALID));
           return;
         }
         ME->round++;
+        ME->subgame_attempt=0;
         if (ME->round<le16toh(g->rounds)) {
           ME->m->last_play_len=0;
           const struct gme_playlistlist* pll;
@@ -279,6 +284,7 @@ void tiptoi_play_oid(tiptoi ME,uint32_t oid) {
           return;
         }
       } else /* if (ME->bonus) */ {
+        /* TODO: FALSE vs. UNKNONWN. */
         const struct gme_subgame* sg=
           gme_game_get_bonusgame(g,t->gme,ME->sg_shuff[ME->round]);
         if (gme_oidlist_contains(gme_subgame_get_oids(sg,GME_SUBGAME_OK_OIDS),oid)) {

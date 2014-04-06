@@ -21,6 +21,7 @@ struct _tiptoi {
   struct gme_game* current_game;
   uint16_t round;
   uint16_t score; /* type 1 */
+  uint16_t subgame_attempt; /* type 1 */
   uint16_t bonus; /* type 6 (type 1) */
   uint16_t match_i; /* type 40 */
   uint16_t subgames_len; /* Sizeof subgame_len */
